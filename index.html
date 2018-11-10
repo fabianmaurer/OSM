@@ -1,52 +1,11 @@
-<html>
-    <head>
-        <title></title>
-        <script src="http://openlayers.org/api/OpenLayers.js"></script>
-        <script type="text/javascript">
-            var lat=34.070;
-            var lon=-118.73;
-            var zoom=15;
-            var map;
- 
-            function init(){
-                map = new OpenLayers.Map ("map", {
-                controls:[
-                    new OpenLayers.Control.Navigation(),
-                    new OpenLayers.Control.PanZoomBar(),
-                    new OpenLayers.Control.LayerSwitcher(),
-                    new OpenLayers.Control.Attribution()],
-                    maxExtent: new OpenLayers.Bounds(-20037508.34,-20037508.34,20037508.34,20037508.34),
-                    maxResolution: 156543.0399,
-                    numZoomLevels: 19,
-                    units: 'm',
-                    projection: new OpenLayers.Projection("EPSG:900913"),
-                    displayProjection: new OpenLayers.Projection("EPSG:4326")
-                } );
- 
-                
-                map.addLayer(new OpenLayers.Layer.OSM());
- 
-                var lonLat = new OpenLayers.LonLat(lon, lat).transform(new OpenLayers.Projection("EPSG:4326"), new OpenLayers.Projection("EPSG:900913"));
- 
-                map.setCenter (lonLat, zoom);
+<HTML>
+    <link rel="stylesheet" type="text/css" href="osm.css" />
+    <title>OSM</title>
 
-                //Initialise the vector layer using OpenLayers.Format.OSM
-                var layer = new OpenLayers.Layer.Vector("Polygon", {
-                    strategies: [new OpenLayers.Strategy.Fixed()],
-                    protocol: new OpenLayers.Protocol.HTTP({
-                        url: "germany-latest.osm.pbf",   //<-- relative or absolute URL to your .osm file
-                        format: new OpenLayers.Format.OSM()
-                    }),
-                    projection: new OpenLayers.Projection("EPSG:4326")
-                });
- 
-                map.addLayers([layer]);
- 
-            }
-        </script>
-    </head>
-    <body onload="init()">
-        <div id="map" class="smallmap"></div>
-        </div>
-    </body>
-</html>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+        crossorigin="anonymous"></script>
+        <script src="./osm-read-0.6.0/osm-read-pbf.js"></script>
+        <script src="osm.js"></script>
+    
+    </HTML>
