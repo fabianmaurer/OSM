@@ -1,10 +1,7 @@
-var parser = osmread.parse({
-    filePath: 'path/to/osm.xml',
+pbfParser.parse({
+    filePath: 'germany-latest.osm.pbf',
     endDocument: function(){
         console.log('document end');
-    },
-    bounds: function(bounds){
-        console.log('bounds: ' + JSON.stringify(bounds));
     },
     node: function(node){
         console.log('node: ' + JSON.stringify(node));
@@ -16,6 +13,7 @@ var parser = osmread.parse({
         console.log('relation: ' + JSON.stringify(relation));
     },
     error: function(msg){
-        console.log('error: ' + msg);
+        console.error('error: ' + msg);
+        throw msg;
     }
 });

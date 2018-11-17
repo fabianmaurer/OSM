@@ -19,6 +19,7 @@ function readPBFElement(fd, position, size, pbfDecode, callback){
 }
 
 function getFileSize(fd, callback){
+    console.log(fd)
     return callback(null, fd.byteLength);
 }
 
