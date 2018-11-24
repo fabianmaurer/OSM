@@ -10,46 +10,92 @@ function log(msg) {
 
 function initmap() {
     // set up the map
-    map = new L.Map('map');
+    map = new L.Map('map',{renderer:L.canvas()});
 
     // create the tile layer with correct attribution
     var osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
     var osmAttrib = 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
-    var osm = new L.TileLayer(osmUrl, { minZoom: 8, maxZoom: 18, attribution: osmAttrib });
+    var osm = new L.TileLayer(osmUrl, { minZoom: 8, maxZoom: 22, attribution: osmAttrib });
+    const polylineOptions={color:'red',smoothFactor:2.0};
 
     // start the map in South-East England
-    map.setView(new L.LatLng(53, 8.8), 9);
+    map.setView(new L.LatLng(53, 8.8), 16);
     map.addLayer(osm);
 
     // create a red polyline from an array of LatLng points
     let zoom1=[];
     let zoom2=[];
     let zoom3=[];
+    console.log('ways')
+    console.log(ways)
+    for(let i=0;i<ways.length;i++){
+        let polylinePoints=[];
+        for(let j=0;j<ways[i].nodeRefs.length;j++){
+            let ref1=ways[i].nodeRefs[j];
+            try{
+                polylinePoints.push([nodes[nodeIdMap[ref1]].lat,nodes[nodeIdMap[ref1]].lon]);
+            }catch(err){
+                console.log(ref1);
+                console.log(nodes[nodeIdMap[ref1]].lat)
+                console.log(nodes[nodeIdMap[ref1]].lon)
+            }
+            
+        }
+        L.polyline(polylinePoints, polylineOptions).addTo(map);
+        // if(categoriesZoom1.includes(edges[i].tags.highway)){
+        //     var latlngs = [
+        //         [nodes[nodeIdMap[edges[i].from]].lat, nodes[nodeIdMap[edges[i].from]].lon],
+        //         [nodes[nodeIdMap[edges[i].to]].lat, nodes[nodeIdMap[edges[i].to]].lon]
+        //     ];
+        //     let polyline=L.polyline(latlngs, polylineOptions).bindPopup('distance:'+edges[i].distance);
+        //     zoom1.push(polyline);
+        // }
+        // else if(categoriesZoom2.includes(edges[i].tags.highway)){
+        //     var latlngs = [
+        //         [nodes[nodeIdMap[edges[i].from]].lat, nodes[nodeIdMap[edges[i].from]].lon],
+        //         [nodes[nodeIdMap[edges[i].to]].lat, nodes[nodeIdMap[edges[i].to]].lon]
+        //     ];
+        //     let polyline=L.polyline(latlngs, polylineOptions).bindPopup('distance:'+edges[i].distance);
+        //     zoom2.push(polyline);
+        // }
+        // else if(categoriesZoom3.includes(edges[i].tags.highway)){
+        //     var latlngs = [
+        //         [nodes[nodeIdMap[edges[i].from]].lat, nodes[nodeIdMap[edges[i].from]].lon],
+        //         [nodes[nodeIdMap[edges[i].to]].lat, nodes[nodeIdMap[edges[i].to]].lon]
+        //     ];
+        //     let polyline=L.polyline(latlngs, polylineOptions).bindPopup('distance:'+edges[i].distance);
+        //     zoom3.push(polyline);
+        // }
+        
+        
+        // zoom the map to the polyline
+        // map.fitBounds(polyline.getBounds());
+    }
     for(let i=0;i<edges.length;i++){
-        if(categoriesZoom1.includes(edges[i].tags.highway)){
-            var latlngs = [
-                [nodes[nodeIdMap[edges[i].from]].lat, nodes[nodeIdMap[edges[i].from]].lon],
-                [nodes[nodeIdMap[edges[i].to]].lat, nodes[nodeIdMap[edges[i].to]].lon]
-            ];
-            let polyline=L.polyline(latlngs, { color: 'red' }).bindPopup('distance:'+edges[i].distance);
-            zoom1.push(polyline);
-        }
-        else if(categoriesZoom2.includes(edges[i].tags.highway)){
-            var latlngs = [
-                [nodes[nodeIdMap[edges[i].from]].lat, nodes[nodeIdMap[edges[i].from]].lon],
-                [nodes[nodeIdMap[edges[i].to]].lat, nodes[nodeIdMap[edges[i].to]].lon]
-            ];
-            let polyline=L.polyline(latlngs, { color: 'red' }).bindPopup('distance:'+edges[i].distance);
-            zoom2.push(polyline);
-        }
-        else if(categoriesZoom3.includes(edges[i].tags.highway)){
-            var latlngs = [
-                [nodes[nodeIdMap[edges[i].from]].lat, nodes[nodeIdMap[edges[i].from]].lon],
-                [nodes[nodeIdMap[edges[i].to]].lat, nodes[nodeIdMap[edges[i].to]].lon]
-            ];
-            let polyline=L.polyline(latlngs, { color: 'red' }).bindPopup('distance:'+edges[i].distance);
-            zoom3.push(polyline);
-        }
+        // if(categoriesZoom1.includes(edges[i].tags.highway)){
+        //     var latlngs = [
+        //         [nodes[nodeIdMap[edges[i].from]].lat, nodes[nodeIdMap[edges[i].from]].lon],
+        //         [nodes[nodeIdMap[edges[i].to]].lat, nodes[nodeIdMap[edges[i].to]].lon]
+        //     ];
+        //     let polyline=L.polyline(latlngs, polylineOptions).bindPopup('distance:'+edges[i].distance);
+        //     zoom1.push(polyline);
+        // }
+        // else if(categoriesZoom2.includes(edges[i].tags.highway)){
+        //     var latlngs = [
+        //         [nodes[nodeIdMap[edges[i].from]].lat, nodes[nodeIdMap[edges[i].from]].lon],
+        //         [nodes[nodeIdMap[edges[i].to]].lat, nodes[nodeIdMap[edges[i].to]].lon]
+        //     ];
+        //     let polyline=L.polyline(latlngs, polylineOptions).bindPopup('distance:'+edges[i].distance);
+        //     zoom2.push(polyline);
+        // }
+        // else if(categoriesZoom3.includes(edges[i].tags.highway)){
+        //     var latlngs = [
+        //         [nodes[nodeIdMap[edges[i].from]].lat, nodes[nodeIdMap[edges[i].from]].lon],
+        //         [nodes[nodeIdMap[edges[i].to]].lat, nodes[nodeIdMap[edges[i].to]].lon]
+        //     ];
+        //     let polyline=L.polyline(latlngs, polylineOptions).bindPopup('distance:'+edges[i].distance);
+        //     zoom3.push(polyline);
+        // }
         
         
         // zoom the map to the polyline
