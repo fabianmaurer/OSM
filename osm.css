@@ -1,3 +1,135 @@
 #map{
-    height:400px;
+    height:100%;
+}
+.top-right{
+    position: absolute;
+    top:0;
+    right:0;
+    background:rgba(255,255,255,0.95);
+    z-index:1000;
+    padding:6px;
+    border-bottom-left-radius: 2px;
+}
+
+html{
+    height:100%;
+    font-family:Calibri;
+}
+
+body{
+    height:100%;
+    margin:0;
+}
+
+.top-left{
+    position: absolute;
+    top:6px;
+    left:6px;
+    background:rgba(0,0,0,0.8);
+    z-index:1000;
+    padding:6px;
+    border-radius: 2px;
+    min-width:100px;
+    color:#ccc;
+}
+
+.route-from{
+    border-radius:4px;
+    padding:4px;
+    margin:6px;
+    border:1px solid #999;
+    display:inline-block;
+    width:140px;
+    height:20px;
+    transition:all 0.2s ease;
+}
+
+.route-from.empty{
+    background:#999;
+}
+
+.route-to{
+    border-radius:4px;
+    padding:4px;
+    margin:6px;
+    border:1px solid #999;
+    display:inline-block;
+    width:140px;
+    height:20px;
+    transition:all 0.2s ease;
+}
+
+.route-to.empty{
+    background:#999;
+}
+
+.route-from-close,.route-to-close{
+    cursor:pointer;
+}
+
+.route-from-close:hover,.route-to-close:hover{
+    transform:scale(1.2);
+    transition:transform 0.2s ease;
+}
+
+.top-left-section{
+    height:61px;
+}
+
+.overlay{
+    position:fixed;
+    top:0;
+    left:0;
+    height:100%;
+    width:100%;
+    z-index:10000;
+    background-color:rgba(0,0,0,0.8);
+    display: -webkit-box;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: -webkit-flex;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.popup{
+    width:620px;
+    height:500px;
+    border-radius:4px;
+    background-color:#eee;
+    position: relative;
+}
+
+.popup-header{
+    text-align:center;
+    padding:8px;
+    font-size:24px;
+}
+
+.popup-close{
+    position: absolute;
+    top:4px;
+    right:4px;
+    transition:all 0.2s ease;
+    cursor:pointer;
+}
+
+.popup-close:hover{
+    transform:scale(1.2);
+}
+
+.popup-content{
+    height:455px;
+    overflow-y:auto;
+}
+
+.popup-show{
+    position: absolute;
+    bottom:0;
+    left:0;
+    border-top-right-radius: 2px;
+    background:rgba(255,255,255,0.95);
+    padding:6px;
+    z-index:1000;
+    cursor:pointer;
 }
