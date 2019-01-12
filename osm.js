@@ -75,7 +75,7 @@ function dijkstra(startNodeId, endNodeId) {
             }
             for (let i = 0; i < neighborEdges.length; i++) {
 
-                // if (categories.includes(edges[neighborEdges[i]].tags.highway)) {
+                if (categories.includes(edges[neighborEdges[i]].tags.highway)) {
                     let newDistance = distances[nodeIdMap[edges[neighborEdges[i]].from]] + edges[neighborEdges[i]].distance;
                     let oldDistance = distances[nodeIdMap[edges[neighborEdges[i]].to]] || Number.MAX_SAFE_INTEGER;
                     if (newDistance < oldDistance) {
@@ -87,7 +87,7 @@ function dijkstra(startNodeId, endNodeId) {
                             addToQueue(edges[neighborEdges[i]].to, distances[nodeIdMap[edges[neighborEdges[i]].to]]);
                         }
                     }
-                //}
+                }
             }
             visited[nodeIdMap[currentNode]] = true;
         }
