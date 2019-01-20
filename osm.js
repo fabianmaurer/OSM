@@ -228,8 +228,6 @@ function initmap() {
     let zoom1 = [];
     let zoom2 = [];
     let zoom3 = [];
-    console.log('ways')
-    console.log(ways)
     let i = 0;
     for (let i = 0; i < ways.length; i++) {
         let polylinePoints = [];
@@ -297,7 +295,6 @@ function initmap() {
 }
 
 let nodes = [],
-    nodesWithEdge = [],
     ways = [],
     relations = [],
     edges = [],
@@ -316,7 +313,10 @@ let nodes = [],
     toLatLon,
     fromLatLon,
     routeLine,
-    routeLayer;
+    routeLayer,
+    a=false,
+    b=false,
+    validNodeIds={};
 const gridStepsX = 3000,
     gridStepsY = 3000;
 
@@ -331,30 +331,38 @@ function parse(file) {
     pbfParser.parse({
         file: file,
         endDocument: function () {
-            console.log('nodes')
-            console.log(nodes);
-            console.log('ways')
-            console.log(ways);
-            console.log('relations')
-            console.log(relations);
-            console.log('bounds')
-            console.log(bounds);
-            log('done.\n');
-            log('nodes: ' + cNodes);
-            log('ways:  ' + cWays);
-            log('rels:  ' + cRels + '\n');
-            getEdges();
+            pbfParser.parse({
+                file: file,
+                endDocument:function(){
+                    log('done.\n');
+                    log('nodes: ' + cNodes);
+                    log('ways:  ' + cWays);
+                    log('rels:  ' + cRels + '\n');
+                    getEdges();
+                },
+                node:function(node){
+                    if(validNodeIds[node.id]){
+                        nodes.push(node);
+                        cNodes++;
+                    }
+                },
+                error:function(msg){
+                    log('error: ' + msg);
+                    throw msg;
+                }
+            });
         },
         bounds: function (bounds) {
             bounds.push(bounds);
         },
-        node: function (node) {
-            nodes.push(node);
-            cNodes++;
-        },
         way: function (way) {
-            ways.push(way);
-            cWays++;
+            if(way.tags.highway){
+                ways.push(way);
+                cWays++;
+                for(let nr of way.nodeRefs){
+                    validNodeIds[nr]=true;
+                }
+            }
         },
         relation: function (relation) {
             relations.push(relation);
@@ -367,10 +375,15 @@ function parse(file) {
     });
 }
 
+
+
 function getEdges() {
     let addedNodes = [];
     console.log('get edges')
     for (let i = 0; i < ways.length; i++) {
+        for(let nr of ways[i].nodeRefs){
+            validNodeIds[nr]=true;
+        }
         for (let j = 0; j < ways[i].nodeRefs.length - 1; j++) {
             edges.push({
                 from: ways[i].nodeRefs[j],
@@ -378,46 +391,43 @@ function getEdges() {
                 wayId: ways[i].id,
                 tags: ways[i].tags
             })
-            if (categories.includes(ways[i].tags.highway)) {
-                nodesWithEdge.push(ways[i].nodeRefs[j]);
-                nodesWithEdge.push(ways[i].nodeRefs[j + 1]);
-            }
         }
     }
     console.log('get edges done')
-    buildOffsetArray();
+    requestAnimationFrame(buildOffsetArray);
 
 }
 
 function buildOffsetArray() {
     // fill nodeIdMap
+    console.log('nodeidmap')
     for (let i = 0; i < nodes.length; i++) {
         nodeIdMap[nodes[i].id] = i;
         offsetArray[i] = 0;
     }
-
+    console.log('-')
     for (let i = 0; i < edges.length; i++) {
         offsetArray[nodeIdMap[edges[i].from] + 1]++;
     }
     // sum up offset indices
+    console.log('offset indices')
     let sum = 0;
     for (let i = 0; i < offsetArray.length; i++) {
         sum += offsetArray[i];
         offsetArray[i] = sum;
     }
-    buildOffsetEdges();
+    buildOffsetEdges(0);
 }
 
-function buildOffsetEdges() {
-    for (let i = 0; i < edges.length; i++) {
-        let minPos = offsetArray[nodeIdMap[edges[i].from]];
-        while (offsetEdges[minPos] != null) minPos++;
-        offsetEdges[minPos] = i;
-    }
-    console.log('offset')
-    console.log(offsetArray);
-    console.log(offsetEdges);
-    calculateAllDistances();
+function buildOffsetEdges(index,step) {
+    console.log('offset edges')
+    // for (let i = index; i < Math.min(index+step,edges.length); i++) {
+    //     let minPos = offsetArray[nodeIdMap[edges[i].from]];
+    //     while (offsetEdges[minPos] != null) minPos++;
+    //     offsetEdges[minPos] = i;
+    // }
+    console.log('offset edges done')
+    requestAnimationFrame(calculateAllDistances);
 }
 
 function contractEdges() {
@@ -431,12 +441,15 @@ function contractEdges() {
 }
 
 function calculateAllDistances() {
+    console.log('calculate distances')
     for (let i = 0; i < edges.length; i++) {
-        let lat1 = nodes[nodeIdMap[edges[i].from]].lat;
-        let lon1 = nodes[nodeIdMap[edges[i].from]].lon;
-        let lat2 = nodes[nodeIdMap[edges[i].to]].lat;
-        let lon2 = nodes[nodeIdMap[edges[i].to]].lon;
-        edges[i].distance = distance(lat1, lon1, lat2, lon2);
+        if(nodes[nodeIdMap[edges[i].from]] && nodes[nodeIdMap[edges[i].to]]){
+            let lat1 = nodes[nodeIdMap[edges[i].from]].lat;
+            let lon1 = nodes[nodeIdMap[edges[i].from]].lon;
+            let lat2 = nodes[nodeIdMap[edges[i].to]].lat;
+            let lon2 = nodes[nodeIdMap[edges[i].to]].lon;
+            edges[i].distance = distance(lat1, lon1, lat2, lon2);
+        }
     }
     // console.log(edges);
     buildPointDistanceGrid();
@@ -451,9 +464,10 @@ function buildPointDistanceGrid() {
         }
     }
     console.log('length')
-    console.log(nodesWithEdge.length)
-    for (nodeId of nodesWithEdge) {
-        let node = nodes[nodeIdMap[nodeId]];
+    for (node of nodes) {
+        if(node==null){
+            continue;
+        }
         xIndex = Math.floor((node.lon - dimensions.xMin) / gridDX);
         yIndex = Math.floor((node.lat - dimensions.yMin) / gridDY);
         if (!pointDistanceGrid[xIndex][yIndex].includes(node.id)) {
@@ -464,15 +478,10 @@ function buildPointDistanceGrid() {
 }
 
 function getClosestPoint(lat, lon, nodeIds) {
-    console.log(nodeIds);
     let minDist = Number.MAX_SAFE_INTEGER;
     let minNode = null;
     for (id of nodeIds) {
         let node = nodes[nodeIdMap[id]];
-        if (node == null) {
-            console.log(id);
-            console.log(nodeIdMap[id] + '/' + nodes.length);
-        }
         let dist = distance(lat, lon, node.lat, node.lon);
         if (dist < minDist) {
             minDist = dist;
