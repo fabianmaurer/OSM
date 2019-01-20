@@ -1,0 +1,12 @@
+How To:
+1. ENTWEDER Auf einem lokalen Server hosten (z.B. Apache24) ODER https://fabianmaurer.github.io/OSM/ aufrufen. Hier wird immer der aktuelle Stand gehostet. Ich werde eine Woche lang keinen neuen commit pushen, dass sich die Seite nicht ändert. Das Repo ist unter https://github.com/fabianmaurer/OSM/ zu finden
+2. Im Browser öffnen
+3. Auf "Datei auswählen" klicken
+4. Eine Datei im Format .osm.pbf auswählen
+5. warten ;)
+6. Wenn Karte geladen hat, auf die Karte klicken um Start- und Endpunkt für die Routenplanung zu setzen; Marker können auch verschoben werden. Die Startposition ist in Bremen; je nach geladener Karte sollte man noch die Sicht verschieben.
+
+Bei Karten ab 400mb (z.B. BW) kann es speicherprobleme geben. Bei mir benötigt BW etwa 6GB RAM.
+In Firefox kann man verfügbaren Speicher in about:config über den key "browser.cache.
+
+Die Routenplanung funktioniert nicht immer, vor allem nachdem ein Marker verschoben wurde.
