@@ -1,9 +1,5 @@
 var logEle = document.getElementById("log");
 
-let categoriesZoom1 = ['motorway', 'motorway_link', 'primary', 'primary_link'];
-let categoriesZoom2 = ['secondary', 'secondary_link'];
-let categoriesZoom3 = ['tertiary', 'tertiary_link', 'residential', 'service', 'service-link', 'trunk', 'trunk-link', 'living_street', 'unclassified', 'unclassified_link', 'living_street']
-let categories = categoriesZoom1.concat(categoriesZoom2.concat(categoriesZoom3));
 
 function log(msg) {
     logEle.textContent += msg + '\n';
@@ -62,9 +58,11 @@ function dijkstra(startNodeId, endNodeId) {
     let neighborEdges = [];
     let currentNode;
     let bestSolution = Number.MAX_SAFE_INTEGER;
+    let maxDist=10*distance(nodes[nodeIdMap[startNodeId]].lat,nodes[nodeIdMap[startNodeId]].lon,nodes[nodeIdMap[endNodeId]].lat,nodes[nodeIdMap[endNodeId]].lon);
+    console.log('maxdist:'+maxDist)
     distances[nodeIdMap[startNodeId]] = 0;
     addToQueue(startNodeId, 0);
-    while (queue.length > 0 ? (queue[0][1] < bestSolution) : false) {
+    while (queue.length > 0 ? (queue[0][1] < Math.min(bestSolution,maxDist)) : false) {
         currentNode = queue.shift()[0];
         if (!visited[nodeIdMap[currentNode]]) {
             neighborEdges = [];
@@ -75,22 +73,24 @@ function dijkstra(startNodeId, endNodeId) {
             }
             for (let i = 0; i < neighborEdges.length; i++) {
 
-                if (categories.includes(edges[neighborEdges[i]].tags.highway)) {
-                    let newDistance = distances[nodeIdMap[edges[neighborEdges[i]].from]] + edges[neighborEdges[i]].distance;
-                    let oldDistance = distances[nodeIdMap[edges[neighborEdges[i]].to]] || Number.MAX_SAFE_INTEGER;
-                    if (newDistance < oldDistance) {
-                        distances[nodeIdMap[edges[neighborEdges[i]].to]] = newDistance;
-                        previous[nodeIdMap[edges[neighborEdges[i]].to]] = (previous[nodeIdMap[edges[neighborEdges[i]].from]] || []).concat([neighborEdges[i]]);
-                        if (edges[neighborEdges[i]].to == endNodeId) {
-                            bestSolution = newDistance;
-                        } else {
-                            addToQueue(edges[neighborEdges[i]].to, distances[nodeIdMap[edges[neighborEdges[i]].to]]);
-                        }
+                let newDistance = distances[nodeIdMap[edges[neighborEdges[i]].from]] + edges[neighborEdges[i]].distance;
+                let oldDistance = distances[nodeIdMap[edges[neighborEdges[i]].to]] || Number.MAX_SAFE_INTEGER;
+                if (newDistance < oldDistance) {
+                    distances[nodeIdMap[edges[neighborEdges[i]].to]] = newDistance;
+                    previous[nodeIdMap[edges[neighborEdges[i]].to]] = (previous[nodeIdMap[edges[neighborEdges[i]].from]] || []).concat([neighborEdges[i]]);
+                    if (edges[neighborEdges[i]].to == endNodeId) {
+                        bestSolution = newDistance;
+                    } else {
+                        addToQueue(edges[neighborEdges[i]].to, distances[nodeIdMap[edges[neighborEdges[i]].to]]);
                     }
                 }
+                
             }
             visited[nodeIdMap[currentNode]] = true;
         }
+    }
+    if(previous[nodeIdMap[endNodeId]]==null){
+        console.log('no path found')
     }
     queue = [];
     return [previous[nodeIdMap[endNodeId]], bestSolution];
@@ -135,7 +135,7 @@ function initmap() {
     // create the tile layer with correct attribution
     var osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
     var osmAttrib = 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
-    var osm = new L.TileLayer(osmUrl, { minZoom: 8, maxZoom: 19, attribution: osmAttrib });
+    var osm = new L.TileLayer(osmUrl, { minZoom: 5, maxZoom: 19, attribution: osmAttrib });
     const polylineOptions = { color: 'red', smoothFactor: 2.0 };
     let fromSelected = false;
     let fromMarker;
@@ -381,14 +381,15 @@ function getEdges() {
     let addedNodes = [];
     console.log('get edges')
     for (let i = 0; i < ways.length; i++) {
-        for(let nr of ways[i].nodeRefs){
-            validNodeIds[nr]=true;
+        for(let j=0;i<ways[i].nodeRefs.length;j++){
+            validNodeIds[ways[i].nodeRefs[j]]=true;
         }
         for (let j = 0; j < ways[i].nodeRefs.length - 1; j++) {
+            if(ways[i].oneway!=null) console.log('oh')
             edges.push({
                 from: ways[i].nodeRefs[j],
                 to: ways[i].nodeRefs[j + 1],
-                wayId: ways[i].id,
+                wayIndex: i,
                 tags: ways[i].tags
             })
         }
@@ -416,16 +417,17 @@ function buildOffsetArray() {
         sum += offsetArray[i];
         offsetArray[i] = sum;
     }
-    buildOffsetEdges(0);
+    buildOffsetEdges();
 }
 
-function buildOffsetEdges(index,step) {
+function buildOffsetEdges() {
     console.log('offset edges')
-    // for (let i = index; i < Math.min(index+step,edges.length); i++) {
-    //     let minPos = offsetArray[nodeIdMap[edges[i].from]];
-    //     while (offsetEdges[minPos] != null) minPos++;
-    //     offsetEdges[minPos] = i;
-    // }
+    let minPos=0;
+    for (let i = 0; i < edges.length; i++) {
+        minPos = offsetArray[nodeIdMap[edges[i].from]];
+        while (offsetEdges[minPos] != null) minPos++;
+        offsetEdges[minPos] = i;
+    }
     console.log('offset edges done')
     requestAnimationFrame(calculateAllDistances);
 }
@@ -444,11 +446,7 @@ function calculateAllDistances() {
     console.log('calculate distances')
     for (let i = 0; i < edges.length; i++) {
         if(nodes[nodeIdMap[edges[i].from]] && nodes[nodeIdMap[edges[i].to]]){
-            let lat1 = nodes[nodeIdMap[edges[i].from]].lat;
-            let lon1 = nodes[nodeIdMap[edges[i].from]].lon;
-            let lat2 = nodes[nodeIdMap[edges[i].to]].lat;
-            let lon2 = nodes[nodeIdMap[edges[i].to]].lon;
-            edges[i].distance = distance(lat1, lon1, lat2, lon2);
+            edges[i].distance = distance(nodes[nodeIdMap[edges[i].from]].lat, nodes[nodeIdMap[edges[i].from]].lon, nodes[nodeIdMap[edges[i].to]].lat, nodes[nodeIdMap[edges[i].to]].lon);
         }
     }
     // console.log(edges);
@@ -464,7 +462,9 @@ function buildPointDistanceGrid() {
         }
     }
     console.log('length')
-    for (node of nodes) {
+    let node={};
+    for (let i=0;i<nodes.length;i++) {
+        node=nodes[i];
         if(node==null){
             continue;
         }
