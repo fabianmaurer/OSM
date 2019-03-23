@@ -1,10 +1,6 @@
 var logEle = document.getElementById("log");
 
 
-function log(msg) {
-    logEle.textContent += msg + '\n';
-}
-
 function fillTable(entries) {
     let $content = $('.popup-content');
     let $table = $(document.createElement('table'));
@@ -327,7 +323,7 @@ function parse(file) {
         cRels = 0,
         bounds = [];
 
-    log('parsing "' + file.name + '" ...');
+    console.log('parsing "' + file.name + '" ...');
 
     pbfParser.parse({
         file: file,
@@ -335,10 +331,9 @@ function parse(file) {
             pbfParser.parse({
                 file: file,
                 endDocument: function () {
-                    log('done.\n');
-                    log('nodes: ' + cNodes);
-                    log('ways:  ' + cWays);
-                    log('rels:  ' + cRels + '\n');
+                    console.log('done.');
+                    console.log(nodes)
+                    
                     saveNodes();
                     // getEdges();
                 },
@@ -347,15 +342,13 @@ function parse(file) {
                         nodes.push(node);
                         cNodes++;
                     }
+                    if(cNodes%50000==0) console.log(cNodes)
                 },
                 error: function (msg) {
-                    log('error: ' + msg);
+                    console.log('error: ' + msg);
                     throw msg;
                 }
             });
-        },
-        bounds: function (bounds) {
-            bounds.push(bounds);
         },
         way: function (way) {
             if (way.tags.highway) {
@@ -364,11 +357,8 @@ function parse(file) {
                 for (let nr of way.nodeRefs) {
                     validNodeIds[nr] = true;
                 }
+                if(cWays%50000==0) console.log(cWays)
             }
-        },
-        relation: function (relation) {
-            relations.push(relation);
-            cRels++;
         },
         error: function (msg) {
             log('error: ' + msg);
@@ -378,16 +368,88 @@ function parse(file) {
 }
 
 function saveNodes() {
-    let l = nodes.length;
-    let s = [];
-    let step = 500000;
-    for (let i = 0; i < l; i += step) {
-        s.push(JSON.stringify(nodes.slice(i, Math.min(i + step, l))))
-        console.log(i + '/' + l)
+    
+    let buffer=new ArrayBuffer(50000000);
+    let view=new Uint32Array(buffer);
+    let separator=12345;
+    let index=0;
+    for(let node of nodes){
+        view[index]=parseInt(node.id);
+        index++;
+        view[index]=Math.round(node.lat*10000000);
+        index++;
+        view[index]=Math.round(node.lon*10000000);
+        index++;
+        if(node.tags){
+            if(node.tags.highway){
+                for(let i=0;i<node.tags.highway.length;i++){
+                    view[index]=node.tags.highway.charCodeAt(i);
+                    index++;
+                }
+            }
+        }
+        view[index]=separator;
+        index++;
     }
-    console.log(l + '/' + l)
-    saveText(s, 'nodes.data', 'download nodes');
-    saveWays();
+    saveArr(view, 'nodes.data', 'download nodes');
+    // let l = nodes.length;
+    // let s = [];
+    // let step = 500000;
+    // for (let i = 0; i < l; i += step) {
+    //     s.push(JSON.stringify(nodes.slice(i, Math.min(i + step, l))))
+    //     console.log(i + '/' + l)
+    // }
+    // console.log(l + '/' + l)
+    // saveText(s,'nodes.data','download nodes')
+    // saveWays();
+}
+
+function handleNodesFile2() {
+    nodes=[];
+    console.log('hello handle')
+    let file = this.files[0];
+    let reader = new FileReader();
+    reader.onload = function () {
+        console.log('reader result')
+        console.log(reader.result)
+        let view=new Uint32Array(reader.result);
+        // for(let i=0;i<50;i++){
+        //     console.log(view[i])
+        // }
+        let index=0;
+        for(let i=0;i<view.length;i++){
+            if(view[index]==0) break;
+            let node={};
+            node.id=view[index];
+            index++;
+            node.lat=view[index]/10000000.0;
+            index++;
+            node.lon=view[index]/10000000.0;
+            index++;
+            node.highway='';
+            while(view[index]!=12345 && index<view.length){
+                node.highway+=String.fromCharCode(view[index]);
+                index++;
+            }
+            index++;
+            nodes.push(node);
+        }
+        console.log('done')
+        console.log(index);
+        console.log(nodes);
+    }
+    reader.readAsArrayBuffer(file)
+}
+
+function saveArr(buffer,filename,label){
+    var a = document.createElement('a');
+    let b=new Blob([buffer.buffer],{
+        type:'application/octet-stream'
+    });
+    a.setAttribute('href', URL.createObjectURL(b));
+    a.setAttribute('download', filename);
+    a.innerHTML = label;
+    $('body').append(a);
 }
 
 function saveText(text, filename, label) {
@@ -569,16 +631,7 @@ function handleFile() {
     parse(file);
 }
 
-function handleNodesFile() {
-    console.log('hello handle')
-    let file = this.files[0];
-    let reader = new FileReader();
-    reader.onload = function () {
-        console.log('done')
-        console.log(reader.result)
-    }
-    reader.readAsText(file.slice(0, 512 * 1024 * 1024))
-}
+
 
 function parseNodes(file) {
     console.log('parse nodes')
@@ -586,7 +639,7 @@ function parseNodes(file) {
 }
 
 function handleWaysFile() {
-    console.log('hello handle')
+    console.log('hello handle ways')
     let file = this.files[0];
     let reader = new FileReader();
     reader.onload = function () {
@@ -598,9 +651,24 @@ function handleWaysFile() {
     reader.readAsText(file)
 }
 
+function handleNodesFile() {
+    console.log('hello handle nodes')
+    let file = this.files[0];
+    console.log(file)
+    let reader = new FileReader();
+    reader.onload = function () {
+        console.log('done')
+        nodes = JSON.parse(reader.result)
+        console.log('nodes done')
+        console.log(nodes)
+    }
+    reader.readAsText(file)
+}
+
 
 document.getElementById("file").addEventListener("change", handleFile, false);
-document.getElementById("nodes").addEventListener("change", handleWaysFile, false);
+document.getElementById("nodes").addEventListener("change", handleNodesFile2, false);
+document.getElementById("ways").addEventListener("change", handleWaysFile, false);
 
 
 function distance(lat1, lon1, lat2, lon2) {
