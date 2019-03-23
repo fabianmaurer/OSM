@@ -58,11 +58,11 @@ function dijkstra(startNodeId, endNodeId) {
     let neighborEdges = [];
     let currentNode;
     let bestSolution = Number.MAX_SAFE_INTEGER;
-    let maxDist=10*distance(nodes[nodeIdMap[startNodeId]].lat,nodes[nodeIdMap[startNodeId]].lon,nodes[nodeIdMap[endNodeId]].lat,nodes[nodeIdMap[endNodeId]].lon);
-    console.log('maxdist:'+maxDist)
+    let maxDist = 10 * distance(nodes[nodeIdMap[startNodeId]].lat, nodes[nodeIdMap[startNodeId]].lon, nodes[nodeIdMap[endNodeId]].lat, nodes[nodeIdMap[endNodeId]].lon);
+    console.log('maxdist:' + maxDist)
     distances[nodeIdMap[startNodeId]] = 0;
     addToQueue(startNodeId, 0);
-    while (queue.length > 0 ? (queue[0][1] < Math.min(bestSolution,maxDist)) : false) {
+    while (queue.length > 0 ? (queue[0][1] < Math.min(bestSolution, maxDist)) : false) {
         currentNode = queue.shift()[0];
         if (!visited[nodeIdMap[currentNode]]) {
             neighborEdges = [];
@@ -84,12 +84,12 @@ function dijkstra(startNodeId, endNodeId) {
                         addToQueue(edges[neighborEdges[i]].to, distances[nodeIdMap[edges[neighborEdges[i]].to]]);
                     }
                 }
-                
+
             }
             visited[nodeIdMap[currentNode]] = true;
         }
     }
-    if(previous[nodeIdMap[endNodeId]]==null){
+    if (previous[nodeIdMap[endNodeId]] == null) {
         console.log('no path found')
     }
     queue = [];
@@ -128,6 +128,7 @@ function addToQueue(nodeId, weight) {
 }
 
 function initmap() {
+    $('#map').removeClass('hidden')
     fillTable(100);
     // set up the map
     map = new L.Map('map', { renderer: L.canvas(), zoomControl: false });
@@ -210,7 +211,7 @@ function initmap() {
         if (routeFrom != null && (routeTo != null)) {
             let d = dijkstra(routeFrom, routeTo);
             console.log(d)
-            if(d[0]) drawPath(d[0]);
+            if (d[0]) drawPath(d[0]);
         }
         // var requestform = e.latlng;
         // var formpopup = L.popup()
@@ -314,9 +315,9 @@ let nodes = [],
     fromLatLon,
     routeLine,
     routeLayer,
-    a=false,
-    b=false,
-    validNodeIds={};
+    a = false,
+    b = false,
+    validNodeIds = {};
 const gridStepsX = 3000,
     gridStepsY = 3000;
 
@@ -333,20 +334,21 @@ function parse(file) {
         endDocument: function () {
             pbfParser.parse({
                 file: file,
-                endDocument:function(){
+                endDocument: function () {
                     log('done.\n');
                     log('nodes: ' + cNodes);
                     log('ways:  ' + cWays);
                     log('rels:  ' + cRels + '\n');
-                    getEdges();
+                    saveNodes();
+                    // getEdges();
                 },
-                node:function(node){
-                    if(validNodeIds[node.id]){
+                node: function (node) {
+                    if (validNodeIds[node.id]) {
                         nodes.push(node);
                         cNodes++;
                     }
                 },
-                error:function(msg){
+                error: function (msg) {
                     log('error: ' + msg);
                     throw msg;
                 }
@@ -356,11 +358,11 @@ function parse(file) {
             bounds.push(bounds);
         },
         way: function (way) {
-            if(way.tags.highway){
+            if (way.tags.highway) {
                 ways.push(way);
                 cWays++;
-                for(let nr of way.nodeRefs){
-                    validNodeIds[nr]=true;
+                for (let nr of way.nodeRefs) {
+                    validNodeIds[nr] = true;
                 }
             }
         },
@@ -375,17 +377,53 @@ function parse(file) {
     });
 }
 
+function saveNodes() {
+    let l = nodes.length;
+    let s = [];
+    let step = 500000;
+    for (let i = 0; i < l; i += step) {
+        s.push(JSON.stringify(nodes.slice(i, Math.min(i + step, l))))
+        console.log(i + '/' + l)
+    }
+    console.log(l + '/' + l)
+    saveText(s, 'nodes.data', 'download nodes');
+    saveWays();
+}
+
+function saveText(text, filename, label) {
+    var a = document.createElement('a');
+    a.setAttribute('href', URL.createObjectURL(new Blob(text, {
+        type: "application/octet-stream"
+    })));
+    a.setAttribute('download', filename);
+    a.innerHTML = label;
+    $('body').append(a);
+}
+
+
+function saveWays() {
+    let l = ways.length;
+    let s = [];
+    let step = 500000;
+    for (let i = 0; i < l; i += step) {
+        s.push(JSON.stringify(ways.slice(i, Math.min(i + step, l))))
+        console.log(i + '/' + l)
+    }
+    console.log(l + '/' + l)
+    saveText(s, 'ways.data', 'download ways')
+}
+
+
+
+
 
 
 function getEdges() {
     let addedNodes = [];
     console.log('get edges')
     for (let i = 0; i < ways.length; i++) {
-        for(let j=0;i<ways[i].nodeRefs.length;j++){
-            validNodeIds[ways[i].nodeRefs[j]]=true;
-        }
         for (let j = 0; j < ways[i].nodeRefs.length - 1; j++) {
-            if(ways[i].oneway!=null) console.log('oh')
+            if (ways[i].oneway != null) console.log('oh')
             edges.push({
                 from: ways[i].nodeRefs[j],
                 to: ways[i].nodeRefs[j + 1],
@@ -422,7 +460,7 @@ function buildOffsetArray() {
 
 function buildOffsetEdges() {
     console.log('offset edges')
-    let minPos=0;
+    let minPos = 0;
     for (let i = 0; i < edges.length; i++) {
         minPos = offsetArray[nodeIdMap[edges[i].from]];
         while (offsetEdges[minPos] != null) minPos++;
@@ -445,7 +483,7 @@ function contractEdges() {
 function calculateAllDistances() {
     console.log('calculate distances')
     for (let i = 0; i < edges.length; i++) {
-        if(nodes[nodeIdMap[edges[i].from]] && nodes[nodeIdMap[edges[i].to]]){
+        if (nodes[nodeIdMap[edges[i].from]] && nodes[nodeIdMap[edges[i].to]]) {
             edges[i].distance = distance(nodes[nodeIdMap[edges[i].from]].lat, nodes[nodeIdMap[edges[i].from]].lon, nodes[nodeIdMap[edges[i].to]].lat, nodes[nodeIdMap[edges[i].to]].lon);
         }
     }
@@ -462,10 +500,10 @@ function buildPointDistanceGrid() {
         }
     }
     console.log('length')
-    let node={};
-    for (let i=0;i<nodes.length;i++) {
-        node=nodes[i];
-        if(node==null){
+    let node = {};
+    for (let i = 0; i < nodes.length; i++) {
+        node = nodes[i];
+        if (node == null) {
             continue;
         }
         xIndex = Math.floor((node.lon - dimensions.xMin) / gridDX);
@@ -531,7 +569,39 @@ function handleFile() {
     parse(file);
 }
 
+function handleNodesFile() {
+    console.log('hello handle')
+    let file = this.files[0];
+    let reader = new FileReader();
+    reader.onload = function () {
+        console.log('done')
+        console.log(reader.result)
+    }
+    reader.readAsText(file.slice(0, 512 * 1024 * 1024))
+}
+
+function parseNodes(file) {
+    console.log('parse nodes')
+    console.log(file)
+}
+
+function handleWaysFile() {
+    console.log('hello handle')
+    let file = this.files[0];
+    let reader = new FileReader();
+    reader.onload = function () {
+        console.log('done')
+        ways = JSON.parse(reader.result)
+        console.log('ways done')
+        console.log(ways)
+    }
+    reader.readAsText(file)
+}
+
+
 document.getElementById("file").addEventListener("change", handleFile, false);
+document.getElementById("nodes").addEventListener("change", handleWaysFile, false);
+
 
 function distance(lat1, lon1, lat2, lon2) {
     var p = 0.017453292519943295;    // Math.PI / 180

@@ -9,7 +9,7 @@
 
             <link rel="stylesheet" href="osm.css"/>
      		<meta charset="utf-8">
-        <title>osm-read HTML5 File API</title>
+        <title>OSM</title>
     </head>
     <body>
         
@@ -25,11 +25,10 @@
         </div>
         <div class="top-right">
                 <input type="file" id="file" accept=".pbf">
-                <p>
-                <pre id="log"></pre>
+                <input type="file" id="nodes" accept=".data">
         </div>
         
-        <div id="map"></div>
+        <div id="map" class="hidden"></div>
         <div class="popup-show" style="display:none;">
             Knoten und Kanten
         </div>

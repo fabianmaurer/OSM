@@ -1,6 +1,9 @@
 #map{
     height:100%;
 }
+.hidden{
+ display:none;
+}
 .top-right{
     position: absolute;
     top:0;
