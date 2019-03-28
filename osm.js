@@ -54,51 +54,51 @@ function dijkstra(startNodeId, endNodeId) {
     let neighborEdges = [];
     let currentNode;
     let bestSolution = Number.MAX_SAFE_INTEGER;
-    let maxDist = 10 * distance(nodes[nodeIdMap[startNodeId]].lat, nodes[nodeIdMap[startNodeId]].lon, nodes[nodeIdMap[endNodeId]].lat, nodes[nodeIdMap[endNodeId]].lon);
+    let maxDist = 2 * distance(nodes[startNodeId].lat, nodes[startNodeId].lon, nodes[endNodeId].lat, nodes[endNodeId].lon);
     console.log('maxdist:' + maxDist)
-    distances[nodeIdMap[startNodeId]] = 0;
+    distances[startNodeId] = 0;
     addToQueue(startNodeId, 0);
     while (queue.length > 0 ? (queue[0][1] < Math.min(bestSolution, maxDist)) : false) {
         currentNode = queue.shift()[0];
-        if (!visited[nodeIdMap[currentNode]]) {
+        if (!visited[currentNode]) {
             neighborEdges = [];
-            for (let i = offsetArray[nodeIdMap[currentNode]]; i < offsetArray[nodeIdMap[currentNode] + 1]; i++) {
-                if (!visited[nodeIdMap[edges[offsetEdges[i]].to]]) {
+            for (let i = offsetArray[currentNode]; i < offsetArray[currentNode + 1]; i++) {
+                if (!visited[edges[offsetEdges[i]].to]) {
                     neighborEdges.push(offsetEdges[i]);
                 }
             }
             for (let i = 0; i < neighborEdges.length; i++) {
 
-                let newDistance = distances[nodeIdMap[edges[neighborEdges[i]].from]] + edges[neighborEdges[i]].distance;
-                let oldDistance = distances[nodeIdMap[edges[neighborEdges[i]].to]] || Number.MAX_SAFE_INTEGER;
+                let newDistance = distances[edges[neighborEdges[i]].from] + edges[neighborEdges[i]].distance;
+                let oldDistance = distances[edges[neighborEdges[i]].to] || Number.MAX_SAFE_INTEGER;
                 if (newDistance < oldDistance) {
-                    distances[nodeIdMap[edges[neighborEdges[i]].to]] = newDistance;
-                    previous[nodeIdMap[edges[neighborEdges[i]].to]] = (previous[nodeIdMap[edges[neighborEdges[i]].from]] || []).concat([neighborEdges[i]]);
+                    distances[edges[neighborEdges[i]].to] = newDistance;
+                    previous[edges[neighborEdges[i]].to] = (previous[edges[neighborEdges[i]].from] || []).concat([neighborEdges[i]]);
                     if (edges[neighborEdges[i]].to == endNodeId) {
                         bestSolution = newDistance;
                     } else {
-                        addToQueue(edges[neighborEdges[i]].to, distances[nodeIdMap[edges[neighborEdges[i]].to]]);
+                        addToQueue(edges[neighborEdges[i]].to, distances[edges[neighborEdges[i]].to]);
                     }
                 }
 
             }
-            visited[nodeIdMap[currentNode]] = true;
+            visited[currentNode] = true;
         }
     }
-    if (previous[nodeIdMap[endNodeId]] == null) {
+    if (previous[endNodeId] == null) {
         console.log('no path found')
     }
     queue = [];
-    return [previous[nodeIdMap[endNodeId]], bestSolution];
+    return [previous[endNodeId], bestSolution];
 }
 
 function drawPath(edgeIndices) {
-    let startPolylinePoints = [fromLatLon, [nodes[nodeIdMap[edges[edgeIndices[0]].from]].lat, nodes[nodeIdMap[edges[edgeIndices[0]].from]].lon]];
-    let endPolylinePoints = [[nodes[nodeIdMap[edges[edgeIndices[edgeIndices.length - 1]].to]].lat, nodes[nodeIdMap[edges[edgeIndices[edgeIndices.length - 1]].to]].lon], toLatLon]
+    let startPolylinePoints = [fromLatLon, [nodes[edges[edgeIndices[0]].from].lat, nodes[edges[edgeIndices[0]].from].lon]];
+    let endPolylinePoints = [[nodes[edges[edgeIndices[edgeIndices.length - 1]].to].lat, nodes[edges[edgeIndices[edgeIndices.length - 1]].to].lon], toLatLon]
     let polylinePoints = [];
-    polylinePoints.push([nodes[nodeIdMap[edges[edgeIndices[0]].from]].lat, nodes[nodeIdMap[edges[edgeIndices[0]].from]].lon]);
+    polylinePoints.push([nodes[edges[edgeIndices[0]].from].lat, nodes[edges[edgeIndices[0]].from].lon]);
     for (let i = 0; i < edgeIndices.length; i++) {
-        polylinePoints.push([nodes[nodeIdMap[edges[edgeIndices[i]].to]].lat, nodes[nodeIdMap[edges[edgeIndices[i]].to]].lon]);
+        polylinePoints.push([nodes[edges[edgeIndices[i]].to].lat, nodes[edges[edgeIndices[i]].to].lon]);
     }
     if (map.hasLayer(routeLayer)) map.removeLayer(routeLayer)
     routeLine = L.polyline(polylinePoints, { color: 'blue', smoothFactor: 2.0 });
@@ -164,7 +164,7 @@ function initmap() {
 
     function updateMarkers(e) {
         let pointId = getClosestPoint(e.latlng.lat, e.latlng.lng, getClosePoints(e.latlng.lat, e.latlng.lng));
-        let point = nodes[nodeIdMap[pointId]];
+        let point = nodes[pointId];
 
         if (!fromSelected) {
             routeFrom = pointId;
@@ -222,70 +222,70 @@ function initmap() {
     });
 
     // create a red polyline from an array of LatLng points
-    let zoom1 = [];
-    let zoom2 = [];
-    let zoom3 = [];
-    let i = 0;
-    for (let i = 0; i < ways.length; i++) {
-        let polylinePoints = [];
-        for (let j = 0; j < ways[i].nodeRefs.length; j++) {
-            let ref1 = ways[i].nodeRefs[j];
-            try {
-                polylinePoints.push([nodes[nodeIdMap[ref1]].lat, nodes[nodeIdMap[ref1]].lon]);
-            } catch (err) {
-                console.log(ref1);
-                console.log(nodes[nodeIdMap[ref1]].lat)
-                console.log(nodes[nodeIdMap[ref1]].lon)
-            }
+    // let zoom1 = [];
+    // let zoom2 = [];
+    // let zoom3 = [];
+    // let i = 0;
+    // for (let i = 0; i < ways.length; i++) {
+    //     let polylinePoints = [];
+    //     for (let j = 0; j < ways[i].nodeRefs.length; j++) {
+    //         let ref1 = ways[i].nodeRefs[j];
+    //         try {
+    //             polylinePoints.push([nodes[ref1].lat, nodes[ref1].lon]);
+    //         } catch (err) {
+    //             console.log(ref1);
+    //             console.log(nodes[ref1].lat)
+    //             console.log(nodes[ref1].lon)
+    //         }
 
-        }
-        let p = L.polyline(polylinePoints, polylineOptions);
-        // if(categoriesZoom1.includes(ways[i].tags.highway)){
-        //     zoom1.push(p);
-        // }
-        // else if(categoriesZoom2.includes(ways[i].tags.highway)){
-        //     zoom2.push(p);
-        // }
-        // else if(categoriesZoom3.includes(ways[i].tags.highway)){
-        //     zoom3.push(p);
-        // }
+    //     }
+    //     let p = L.polyline(polylinePoints, polylineOptions);
+    //     // if(categoriesZoom1.includes(ways[i].tags.highway)){
+    //     //     zoom1.push(p);
+    //     // }
+    //     // else if(categoriesZoom2.includes(ways[i].tags.highway)){
+    //     //     zoom2.push(p);
+    //     // }
+    //     // else if(categoriesZoom3.includes(ways[i].tags.highway)){
+    //     //     zoom3.push(p);
+    //     // }
 
-    }
+    // }
 
-    let layer1 = L.layerGroup(zoom1);
-    let layer2 = L.layerGroup(zoom2);
-    let layer3 = L.layerGroup(zoom3);
-    map.addLayer(layer1)
-    map.addLayer(layer2)
-    map.addLayer(layer3)
+    // let layer1 = L.layerGroup(zoom1);
+    // let layer2 = L.layerGroup(zoom2);
+    // let layer3 = L.layerGroup(zoom3);
+    // map.addLayer(layer1)
+    // map.addLayer(layer2)
+    // map.addLayer(layer3)
 
-    map.on('zoomend', function () {
-        console.log(map.getZoom())
-        if (map.getZoom() < 10) {
-            if (map.hasLayer(layer2)) {
-                map.removeLayer(layer2);
-            }
-            if (map.hasLayer(layer3)) {
-                map.removeLayer(layer3);
-            }
-        }
-        if (map.getZoom() >= 10) {
-            if (!map.hasLayer(layer2)) {
-                map.addLayer(layer2)
-            }
-            if (map.hasLayer(layer3)) {
-                map.removeLayer(layer3);
-            }
-        }
-        if (map.getZoom() >= 13) {
-            if (!map.hasLayer(layer2)) {
-                map.addLayer(layer2)
-            }
-            if (!map.hasLayer(layer3)) {
-                map.addLayer(layer3);
-            }
-        }
-    });
+    // map.on('zoomend', function () {
+    //     console.log(map.getZoom())
+    //     if (map.getZoom() < 10) {
+    //         if (map.hasLayer(layer2)) {
+    //             map.removeLayer(layer2);
+    //         }
+    //         if (map.hasLayer(layer3)) {
+    //             map.removeLayer(layer3);
+    //         }
+    //     }
+    //     if (map.getZoom() >= 10) {
+    //         if (!map.hasLayer(layer2)) {
+    //             map.addLayer(layer2)
+    //         }
+    //         if (map.hasLayer(layer3)) {
+    //             map.removeLayer(layer3);
+    //         }
+    //     }
+    //     if (map.getZoom() >= 13) {
+    //         if (!map.hasLayer(layer2)) {
+    //             map.addLayer(layer2)
+    //         }
+    //         if (!map.hasLayer(layer3)) {
+    //             map.addLayer(layer3);
+    //         }
+    //     }
+    // });
 
 
 
@@ -372,7 +372,6 @@ function parse(file) {
                     if (validNodeIds[node.id]) {
                         nodes.push({
                             id:node.id,
-                            newId:cNodes,
                             lat:node.lat,
                             lon:node.lon
                         });
@@ -387,17 +386,19 @@ function parse(file) {
         },
         way: function (way) {
             if (way.tags.highway) {
-                if(way.tags.highway!='footway' && way.tags.highway!='cycleway' && way.tags.highway!='path'){
-                    
+                if(way.tags.highway!='footway' && way.tags.highway!='cycleway' && way.tags.highway!='path'&& way.tags.highway!='track'&& way.tags.highway!='bridleway'&& way.tags.highway!='track'&& way.tags.highway!='service'&& way.tags.highway!='pedestrian'){
                     ways.push({
                         id:way.id,
                         nodeRefs:way.nodeRefs
                     });
                     cWays++;
-                    for (let nr of way.nodeRefs) {
-                        validNodeIds[nr] = true;
+                    for(let i=0;i<way.nodeRefs.length;i++){
+                        validNodeIds[way.nodeRefs[i]] = true;
                     }
-                }   
+                    // for (let nr of way.nodeRefs) {
+                    //     validNodeIds[nr] = true;
+                    // }
+                }
                 
             }
         },
@@ -423,16 +424,15 @@ function saveNodesAsString(){
 
 function saveNodes() {
     
-    let buffer=new ArrayBuffer(nodes.length*12);
+    
+    let buffer=new ArrayBuffer(nodes.length*8);
     let view=new Uint32Array(buffer);
     let separator=12345;
     let index=0;
-    for(let node of nodes){
-        view[index]=parseInt(node.id);
+    for(let i=0;i<nodes.length;i++){
+        view[index]=Math.round(nodes[i].lat*10000000);
         index++;
-        view[index]=Math.round(node.lat*10000000);
-        index++;
-        view[index]=Math.round(node.lon*10000000);
+        view[index]=Math.round(nodes[i].lon*10000000);
         index++;
         // if(node.tags){
         //     if(node.tags.highway){
@@ -445,21 +445,23 @@ function saveNodes() {
         // view[index]=separator;
         // index++;
     }
+    console.log('view')
+    console.log(view)
     saveArr(view, 'nodes.data', 'Nodes');
     
     getEdges();
 }
 
 function saveEdges() {
-    
+    buildNodeIdMap();
     let buffer=new ArrayBuffer(edges.length*8);
     let view=new Uint32Array(buffer);
     let separator=12345;
     let index=0;
     for(let edge of edges){
-        view[index]=parseInt(edge.from);
+        view[index]=nodeIdMap[edge.from];
         index++;
-        view[index]=parseInt(edge.to);
+        view[index]=nodeIdMap[edge.to];
         index++;
     }
     saveEdgesArr(view, 'edges.data', 'Edges');
@@ -499,7 +501,6 @@ function handleEdgesFile() {
         // }
         let index=0;
         for(let i=0;i<view.length/2;i++){
-            if(view[index]==0) break;
             let edge={};
             edge.from=view[index];
             index++;
@@ -508,6 +509,8 @@ function handleEdgesFile() {
             edges.push(edge);
             edges.push({from:edge.to,to:edge.from});
         }
+
+        console.log(edges)
         $('#ways-block').removeClass('false');
         $('#ways-block').addClass('true');
         $('#ways-icon').removeClass('fa-times');
@@ -530,11 +533,10 @@ function handleNodesFile2() {
         //     console.log(view[i])
         // }
         let index=0;
-        for(let i=0;i<view.length/3;i++){
-            if(view[index]==0) break;
+        console.log(view.length)
+        for(let i=0;i<view.length/2;i++){
             let node={};
-            node.id=view[index];
-            index++;
+            node.id=i;
             node.lat=view[index]/10000000.0;
             index++;
             node.lon=view[index]/10000000.0;
@@ -545,6 +547,7 @@ function handleNodesFile2() {
             //     index++;
             // }
             index++;
+            
             nodes.push(node);
         }
         console.log(nodes)
@@ -659,16 +662,21 @@ function go(){
     initmap();
 }
 
-function buildOffsetArray() {
-    // fill nodeIdMap
+function buildNodeIdMap(){
     console.log('nodeidmap')
     for (let i = 0; i < nodes.length; i++) {
         nodeIdMap[nodes[i].id] = i;
+    }
+}
+
+function buildOffsetArray() {
+    // fill nodeIdMap
+    for (let i = 0; i < nodes.length; i++) {
         offsetArray[i] = 0;
     }
     console.log('-')
     for (let i = 0; i < edges.length; i++) {
-        offsetArray[nodeIdMap[edges[i].from] + 1]++;
+        offsetArray[edges[i].from + 1]++;
     }
     // sum up offset indices
     console.log('offset indices')
@@ -685,9 +693,12 @@ function buildOffsetEdges() {
     console.log('offset edges')
     let minPos = 0;
     for (let i = 0; i < edges.length; i++) {
-        minPos = offsetArray[nodeIdMap[edges[i].from]];
-        while (offsetEdges[minPos] != null) minPos++;
+        minPos = offsetArray[edges[i].from];
+        while (offsetEdges[minPos] != null){
+            minPos++;
+        }
         offsetEdges[minPos] = i;
+        if(i%1000==0) console.log(i)
     }
     console.log('offset edges done')
     $('#calc-text').html('Dijkstra Calculations (3/5)');
@@ -707,8 +718,8 @@ function contractEdges() {
 function calculateAllDistances() {
     console.log('calculate distances')
     for (let i = 0; i < edges.length; i++) {
-        if (nodes[nodeIdMap[edges[i].from]] && nodes[nodeIdMap[edges[i].to]]) {
-            edges[i].distance = distance(nodes[nodeIdMap[edges[i].from]].lat, nodes[nodeIdMap[edges[i].from]].lon, nodes[nodeIdMap[edges[i].to]].lat, nodes[nodeIdMap[edges[i].to]].lon);
+        if (nodes[edges[i].from] && nodes[edges[i].to]) {
+            edges[i].distance = distance(nodes[edges[i].from].lat, nodes[edges[i].from].lon, nodes[edges[i].to].lat, nodes[edges[i].to].lon);
         }
     }
     // console.log(edges);
@@ -747,7 +758,7 @@ function getClosestPoint(lat, lon, nodeIds) {
     let minDist = Number.MAX_SAFE_INTEGER;
     let minNode = null;
     for (id of nodeIds) {
-        let node = nodes[nodeIdMap[id]];
+        let node = nodes[id];
         let dist = distance(lat, lon, node.lat, node.lon);
         if (dist < minDist) {
             minDist = dist;
@@ -759,7 +770,10 @@ function getClosestPoint(lat, lon, nodeIds) {
 }
 
 function getClosePoints(lat, lon) {
-    
+    console.log('get close points')
+    console.log(lat)
+    console.log(lon)
+    console.log(dimensions)
     let xIndex = Math.floor((lon - dimensions.xMin) / gridDX);
     let yIndex = Math.floor((lat - dimensions.yMin) / gridDY);
     console.log('get close points')
