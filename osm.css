@@ -136,3 +136,56 @@ body{
     z-index:1000;
     cursor:pointer;
 }
+
+.file-interface input{
+    width: 0.1px;
+	height: 0.1px;
+	opacity: 0;
+	overflow: hidden;
+	position: absolute;
+	z-index: -1;
+}
+
+.block{
+    display:inline-block;
+    margin:10px;
+}
+
+.generate-block{
+    background:#23b7e5;
+    color:white;
+}
+
+.read-block.false{
+    background:#f05050;
+    color:white;
+}
+
+.read-block.true{
+    background:#27c24c;
+    color:white;
+}
+
+.block-icon{
+    padding:10px;
+    width:50px;
+    text-align:center;
+    color:rgba(255,255,255,0.8);
+    font-size:40px;
+}
+
+.generate{
+    width:100px;
+    text-align:center;
+    cursor:pointer;
+    padding:20px;
+    float:right;
+}
+
+.generate:hover{
+    background-color:#18a0ca;
+}
+
+.read-block.false{
+    background-color:#ed2d2d;
+}

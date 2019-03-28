@@ -9,15 +9,15 @@ function fillTable(entries) {
     $table.css('table-layout', 'fixed');
     $table.css('width', '100%');
     $content.append($table);
-    let types = {};
-    for (way of ways) {
-        if (types[way.tags.highway]) types[way.tags.highway]++;
-        else types[way.tags.highway] = 1;
-    }
-    $table.append('<tr><td>Knoten</td><td>' + nodes.length + '</td></tr>')
-    for (type in types) {
-        $table.append('<tr><td>' + type + '</td><td>' + types[type] + '</td></tr>')
-    }
+    // let types = {};
+    // for (way of ways) {
+    //     if (types[way.tags.highway]) types[way.tags.highway]++;
+    //     else types[way.tags.highway] = 1;
+    // }
+    // $table.append('<tr><td>Knoten</td><td>' + nodes.length + '</td></tr>')
+    // for (type in types) {
+    //     $table.append('<tr><td>' + type + '</td><td>' + types[type] + '</td></tr>')
+    // }
 
     // $nodeTableContainer=$(document.createElement('td'));
     // $nodeTableContainer.css('border-right','1px solid #333');
@@ -333,13 +333,18 @@ function parse(file) {
                 endDocument: function () {
                     console.log('done.');
                     console.log(nodes)
-                    
+                    console.log(ways)
                     saveNodes();
+                    // saveNodesAsText();
                     // getEdges();
                 },
                 node: function (node) {
                     if (validNodeIds[node.id]) {
-                        nodes.push(node);
+                        nodes.push({
+                            id:node.id,
+                            lat:node.lat,
+                            lon:node.lon
+                        });
                         cNodes++;
                     }
                     if(cNodes%50000==0) console.log(cNodes)
@@ -352,7 +357,10 @@ function parse(file) {
         },
         way: function (way) {
             if (way.tags.highway) {
-                ways.push(way);
+                ways.push({
+                    id:way.id,
+                    nodeRefs:way.nodeRefs
+                });
                 cWays++;
                 for (let nr of way.nodeRefs) {
                     validNodeIds[nr] = true;
@@ -367,9 +375,22 @@ function parse(file) {
     });
 }
 
+function saveNodesAsString(){
+    let l = nodes.length;
+    let s = [];
+    let step = 500000;
+    for (let i = 0; i < l; i += step) {
+        s.push(JSON.stringify(nodes.slice(i, Math.min(i + step, l))))
+        console.log(i + '/' + l)
+    }
+    console.log(l + '/' + l)
+    saveText(s,'nodes.data','download nodes');
+    saveWaysAsText();
+}
+
 function saveNodes() {
     
-    let buffer=new ArrayBuffer(50000000);
+    let buffer=new ArrayBuffer(nodes.length*12);
     let view=new Uint32Array(buffer);
     let separator=12345;
     let index=0;
@@ -380,29 +401,41 @@ function saveNodes() {
         index++;
         view[index]=Math.round(node.lon*10000000);
         index++;
-        if(node.tags){
-            if(node.tags.highway){
-                for(let i=0;i<node.tags.highway.length;i++){
-                    view[index]=node.tags.highway.charCodeAt(i);
-                    index++;
-                }
-            }
-        }
-        view[index]=separator;
-        index++;
+        // if(node.tags){
+        //     if(node.tags.highway){
+        //         for(let i=0;i<node.tags.highway.length;i++){
+        //             view[index]=node.tags.highway.charCodeAt(i);
+        //             index++;
+        //         }
+        //     }
+        // }
+        // view[index]=separator;
+        // index++;
     }
     saveArr(view, 'nodes.data', 'download nodes');
-    // let l = nodes.length;
-    // let s = [];
-    // let step = 500000;
-    // for (let i = 0; i < l; i += step) {
-    //     s.push(JSON.stringify(nodes.slice(i, Math.min(i + step, l))))
-    //     console.log(i + '/' + l)
-    // }
-    // console.log(l + '/' + l)
-    // saveText(s,'nodes.data','download nodes')
-    // saveWays();
+    
+    saveWaysAsText();
 }
+
+// function saveWays() {
+    
+//     let buffer=new ArrayBuffer(50000000);
+//     let view=new Uint32Array(buffer);
+//     let separator=12345;
+//     let index=0;
+//     for(let way of ways){
+//         view[index]=parseInt(way.id);
+//         index++;
+//         view[index]=Math.round(way.lat*10000000);
+//         index++;
+//         view[index]=Math.round(way.lon*10000000);
+//         index++;
+//         view[index]=separator;
+//         index++;
+//     }
+//     saveArr(view, 'ways.data', 'download ways');
+    
+// }
 
 function handleNodesFile2() {
     nodes=[];
@@ -417,7 +450,7 @@ function handleNodesFile2() {
         //     console.log(view[i])
         // }
         let index=0;
-        for(let i=0;i<view.length;i++){
+        for(let i=0;i<view.length/3;i++){
             if(view[index]==0) break;
             let node={};
             node.id=view[index];
@@ -425,12 +458,12 @@ function handleNodesFile2() {
             node.lat=view[index]/10000000.0;
             index++;
             node.lon=view[index]/10000000.0;
-            index++;
-            node.highway='';
-            while(view[index]!=12345 && index<view.length){
-                node.highway+=String.fromCharCode(view[index]);
-                index++;
-            }
+            // index++;
+            // node.highway='';
+            // while(view[index]!=12345 && index<view.length){
+            //     node.highway+=String.fromCharCode(view[index]);
+            //     index++;
+            // }
             index++;
             nodes.push(node);
         }
@@ -463,15 +496,17 @@ function saveText(text, filename, label) {
 }
 
 
-function saveWays() {
+function saveWaysAsText() {
     let l = ways.length;
     let s = [];
-    let step = 500000;
-    for (let i = 0; i < l; i += step) {
-        s.push(JSON.stringify(ways.slice(i, Math.min(i + step, l))))
-        console.log(i + '/' + l)
-    }
-    console.log(l + '/' + l)
+    
+    // let step = 500000;
+    // for (let i = 0; i < l; i += step) {
+    //     s.push(JSON.stringify(ways.slice(i, Math.min(i + step, l))))
+
+    // }
+    s.push(JSON.stringify(ways))
+    // console.log(l + '/' + l)
     saveText(s, 'ways.data', 'download ways')
 }
 

@@ -23,10 +23,33 @@
             <div class="route-to empty"></div><i class="fas fa-times route-to-close"></i>
         </div>
         </div>
-        <div class="top-right">
-                osm.pbf:<input type="file" id="file" accept=".pbf">
-                nodes:<input type="file" id="nodes" accept=".data">
-                ways:<input type="file" id="ways" accept=".data">
+        <div class="file-interface">
+                <input type="file" id="file" name="file" accept=".pbf">
+                <div class="block generate-block">
+                    <div class="block-icon fas fa-search-location">
+
+                    </div>
+                            <label for="file" class="generate">Parse Map File</label>
+                    
+                        
+                </div>
+                <br>
+                <input type="file" id="nodes" name="nodes" accept=".data">
+                <div class="block read-block false">
+                    <div class="block-icon fas fa-times">
+
+                    </div>
+                        <label for="nodes" class="generate">Open nodes.data</label>
+                </div>
+                <br>
+                <input type="file" id="ways" name="ways" accept=".data">
+                <div class="block read-block false">
+                    <div class="block-icon fas fa-times">
+
+                    </div>
+                        <label for="ways" class="generate">Open ways.data</label>
+                </div>
+                <br>
         </div>
         
         <div id="map" class="hidden"></div>
