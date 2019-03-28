@@ -16,7 +16,7 @@
 
 html{
     height:100%;
-    font-family:Calibri;
+    font-family:Helvetica;
 }
 
 body{
@@ -167,25 +167,128 @@ body{
 }
 
 .block-icon{
-    padding:10px;
+    padding:10px 6px;
     width:50px;
     text-align:center;
     color:rgba(255,255,255,0.8);
     font-size:40px;
+    float:right;
 }
 
 .generate{
-    width:100px;
-    text-align:center;
+    width:250px;
     cursor:pointer;
-    padding:20px;
     float:right;
+}
+
+#go-button{
+    width:250px;
+    cursor:pointer;
+    float:right;
+}
+
+.false #go-button{
+    cursor:not-allowed;
+}
+
+.true #go-button{
+    cursor:pointer;
+}
+
+.true #go-button:hover{
+    background:#ff7c05;
 }
 
 .generate:hover{
     background-color:#18a0ca;
 }
 
+.false .generate:hover{
+    background:#ed2d2d;
+}
+
+.true .generate:hover{
+    background:#21a240;
+}
+
 .read-block.false{
-    background-color:#ed2d2d;
+    background-color:#f05050;
+}
+
+.button-block.false{
+    background:lightgray;
+    color:white;
+}
+
+.button-block.true{
+    background:#ff902b;
+    color:white;
+}
+
+.center{
+    position: absolute;
+    display:flex;
+    height:100%;
+    width:100%;
+    justify-content: center;
+    align-items: center;
+}
+
+.number-icon{
+    text-align:center;
+    color:rgba(255,255,255,0.8);
+    font-size:42px;
+    display:inline-block;
+    padding-left:12px;
+    padding-bottom:6px;
+}
+
+.button-text{
+    padding:21px;
+    display:inline-block;
+    vertical-align:bottom;
+    padding-right:0;
+    padding-left:8px;
+}
+
+.mini-block{
+    background:#23b7e5;
+    transition:height 0.4s ease;
+    height:30px;
+    margin:-14px 10px 0 60px;
+    color:white;
+    border-top:1px solid rgba(255,255,255,0.3);
+    white-space:nowrap;
+}
+
+.mini-block em{
+    margin-right:2px;
+}
+
+.mini-block.hidden{
+    height:0px;
+}
+
+.mini-block .left{
+    width:50%;
+    display:inline-block;
+    height:100%;
+    padding:6px;
+    box-sizing:border-box;
+}
+
+.mini-block .right{
+    width:50%;
+    display:inline-block;
+    height:100%;
+    padding:6px;
+    box-sizing:border-box;
+    border-left:1px solid rgba(255,255,255,0.3);
+    margin-left:-6px;
+}
+
+.mini-block a{
+    color:white;
+    text-decoration:none;
+    font-size:14px;
 }
