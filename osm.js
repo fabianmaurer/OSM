@@ -387,7 +387,7 @@ function parse(file) {
         },
         way: function (way) {
             if (way.tags.highway) {
-                if(ways.tags.highway!='footway' && ways.tags.highway!='cycleway' && ways.tags.highway!='path'){
+                if(way.tags.highway!='footway' && way.tags.highway!='cycleway' && way.tags.highway!='path'){
                     
                     ways.push({
                         id:way.id,
