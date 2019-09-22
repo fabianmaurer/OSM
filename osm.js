@@ -99,7 +99,7 @@ function dijkstra(startNodeId, endNodeId) {
     let velocities=[];
     let currentNode;
     let bestSolution = Number.MAX_SAFE_INTEGER;
-    let maxDist = 50 * 2 * distance(nodes[startNodeId].lat, nodes[startNodeId].lon, nodes[endNodeId].lat, nodes[endNodeId].lon);
+    let maxDist = 50 * 1 * distance(nodes[startNodeId].lat, nodes[startNodeId].lon, nodes[endNodeId].lat, nodes[endNodeId].lon);
     distances[startNodeId] = 0;
     velocities[startNodeId] = 0;
     addToQueue(startNodeId, 0);
@@ -294,9 +294,9 @@ function initmap() {
                 d = dijkstra(routeFrom, routeTo);
                 console.log(d)
                 if (d[0]) drawPath(d[0]);
-            })
-            $('.calculating').addClass('hidden')
-            $('.routeinfo').removeClass('hidden')
+                $('.calculating').addClass('hidden')
+                $('.routeinfo').removeClass('hidden')
+            },200)
         }
         // var requestform = e.latlng;
         // var formpopup = L.popup()
@@ -995,9 +995,14 @@ function velocityAfterDist(v,dist,a,maxSpeed){
 function selectCar(index){
     selectedCar=availableCars[index];
     if(d.length>0){
-        d = dijkstra(routeFrom, routeTo);
-        console.log(d)
-        if (d[0]) drawPath(d[0]);
+        $('.calculating').removeClass('hidden')
+        setTimeout(function(){
+            d = dijkstra(routeFrom, routeTo);
+            console.log(d)
+            if (d[0]) drawPath(d[0]);
+            $('.calculating').addClass('hidden')
+        },200)
+        
     }
 }
 

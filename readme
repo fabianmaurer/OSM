@@ -1,13 +1,77 @@
-How To:
-1. ENTWEDER Auf einem lokalen Server hosten (z.B. Apache24) ODER https://fabianmaurer.github.io/OSM/ aufrufen. Hier wird immer der aktuelle Stand gehostet. Ich werde eine Woche lang keinen neuen commit pushen, dass sich die Seite nicht ändert. Das Repo ist unter https://github.com/fabianmaurer/OSM/ zu finden
-2. Im Browser öffnen
-3. Auf "Datei auswählen" klicken
-4. Eine Datei im Format .osm.pbf auswählen
-5. warten ;)
-6. Wenn Karte geladen hat, auf die Karte klicken um Start- und Endpunkt für die Routenplanung zu setzen; Marker können auch verschoben werden. Die Startposition ist in Bremen; je nach geladener Karte sollte man noch die Sicht verschieben.
+DOKUMENTATION
 
-Bei Karten ab 400mb (z.B. BW) kann es Speicherprobleme geben. Bei mir benötigt eine Karte von BW etwa 6GB RAM.
-Eine Karte, die definitiv funktioniert, ist Hessen (209mb).
-In Firefox kann man verfügbaren Speicher in about:config über den key "browser.cache.
+Projektname: High Speed Planner
 
-Die Routenplanung funktioniert nicht immer, vor allem nachdem ein Marker verschoben wurde.
+Kleine Anmerkung zum Einlesen der Rohdaten:
+Die Verarbeitung der Daten ist etwas ungewöhnlich, weil alles Clientseitig über Javascript abläuft. Das Einlesen der .osm.pbf-Datei dauert sehr lange, daher werden nach dem Einlesen zwei ziemlich optimierte Dateien mit allen relevanten Informationen über Knoten und Kanten zum speichern bereitgestellt. Von da an können statt der .osm.pbf-Datei einfach die Dateien nodes.data und edges.data geladen werden. Diese Dateien werden Bitweise geschrieben und verbrauchen (vermutlich) so wenig Speicherplatz wie unkomprimiert möglich (für BW je etwa 25MB).
+Das Einlesen von .osm.pbf-Dateien ist ein bisschen kritisch, weil Browser einen Prozess ab einem gewissen Arbeitsspeicherverbrauch einfach stoppen. Ich habe zum Testen immer die BW-Kartendaten verwendet und das hat immer funktioniert. Ich kann aber nicht garantieren, dass der Deutschlandgraph funktioniert. Mit einem modifizierten Browser bestimmt ;)
+
+
+
+
+Problemdefinition:
+
+Ziel ist es, eine möglichst schnelle Route zu berechnen, ohne Geschwindigkeitslimits zu beachten, dafür aber die Eigenschaften des Fahrzeugs (Beschleunigung, Höchstgeschwindigkeit und Kurvenverhalten) in Bezug auf den Verlauf der Strecke. Die Straßen werden also quasi wie eine Rennstrecke behandelt und die kürzeste Route ist oft nicht die schnellste.
+In der Vorbereitung der Daten wird daher zu jeder Kante der Winkel berechnet, sodass bei angrenzenden Kanten anhand der Kantenlänge und der Winkeldifferenz eine Art Winkeldichte (Winkel/Distanz) berechnet werden kann und daraus letztendlich die maximal mögliche Geschwindigkeit in der Kurve abhängig vom Fahrzeug. In der Präsentation werde ich ein bisschen auf die Physik dahinter eingehen. Das Kurvenverhalten habe ich durch eine maximale laterale Beschleunigung modelliert (hoch = gutes Kurvenverhalten).
+Ich habe 4 Autos vorkonfiguriert, um den Einfluss der Eigenschaften darzustellen. Hier sind die Eigenschaften in Worte ausgedrückt:
+
+Auto #1:
+Beschleunigung:                 niedrig
+Höchstgeschwindigkeit:          niedrig
+Max. laterale Beschleunigung:   niedrig
+
+Auto #2:
+Beschleunigung:                 mittel
+Höchstgeschwindigkeit:          mittel
+Max. laterale Beschleunigung:   hoch
+
+Auto #3:
+Beschleunigung:                 hoch
+Höchstgeschwindigkeit:          hoch
+Max. laterale Beschleunigung:   niedrig
+
+Auto #4:
+Beschleunigung:                 hoch
+Höchstgeschwindigkeit:          hoch
+Max. laterale Beschleunigung:   sehr hoch
+
+Als Optimierungskriterium wird die Zeit verwendet, in der ein Knoten erreicht wurde. Allerdings wird zu jedem Knoten eines Pfades zusätzlich die Geschwindigkeit gespeichert, mit der der Knoten erreicht wurde und für den nächsten Schritt mit einbezogen. Beispiel: Wenn das Auto gerade sehr langsam ist, macht eine scharfe Kurve nicht viel aus und könnte sich gegenüber einer weiten Kurve lohnen.
+Zusätzlich zur Zeit wird also auch die Geschwindigkeit vorwärts propagiert. Ein Problem ist dabei, dass eigentlich Rückwärtspropagation nötig wäre, um rechtzeitig zu bremsen. Da das aber den Algorithmus extrem durcheinander bringen würde und vermutlich keine gute Lösung mehr garantieren könnte, bin ich von unendlich hoher Bremskraft ausgegangen und es wird immer erst dann gebremst, wenn die Kurve schon erreicht ist. Autos können immerhin auch stärker Bremsen als Beschleunigen, aber ganz akkurat ist das natürlich nicht.
+Am Ende wird noch ein Graph gezeichnet, der den Geschwindigkeitsverlauf abhängig von vergangener Zeit darstellt (wird mit HTML-Canvas gezeichnet).
+
+
+
+
+Wie wird der Code kompiliert:
+
+Es muss nichts kompiliert werden.
+
+
+
+
+Wie wird der Code ausgeführt:
+
+Über einen lokalen Server (z.B. Apache) laufen lassen. Dann localhost/{Ordnername} im Browser aufrufen. Ich habe es in Chrome getestet und in Opera scheint es auch zu funktionieren.
+Alternativ wird es auch hier gehostet:
+https://fabianmaurer.github.io/OSM/
+Es wird automatisch basierend auf meinem Git-Repository gehostet, das sich hier befindet:
+https://github.com/fabianmaurer/OSM
+Wenn irgendwas beim Ausführen nicht funktioniert, gibt es vielleicht hilfreiche Fehlerausgaben in der Entwicklerkonsole (in Chrome ctrl+shift+J). Oder natürlich einfach mich fragen.
+
+
+
+
+Wie ist die Anwendung zu benutzen:
+
+Einfach die Schritte zum Verarbeiten der Daten in angegebener Reihenfolge durchgehen. Nach dem Parsen der Rohdaten lohnt es sich eventuell, den Browser neuzustarten, dass der Arbeitsspeicher wieder freigegeben wird.
+Um Start und Zeit zu platzieren, einfach auf die Karte klicken. Marker können per Drag&Drop verschoben werden. Der Dijkstra-Algorithmus dauert ein bisschen, weil er kaum optimiert ist und ein Haufen Physikzeug berechnet. Distanzen bis 20km sind kein Problem, darüber kann es dauern. Wenn ohne ersichtlichen Grund kein Weg berechnet wird, gibt es keinen Weg zwischen den Punkten (es gibt ein paar unerreichbare Straßen im Graph).
+Durch Klicken auf ein Bild von einem Auto kann dieses ausgewählt werden. Falls Start und Ziel gesetzt sind, wird die Route dann neu berechnet.
+
+
+
+
+Verwendete Ressourcen von Dritten:
+osm-read v0.6.0 zum Einlesen von .osm.pdf-Dateien
+leaflet zur Darstellung der Karte
+Fontawesome für ein paar svg-Icons
+Bilder von Autosilhouetten, die zur kommerziellen Nutzung freigegeben sind
