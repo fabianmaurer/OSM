@@ -28,46 +28,64 @@ body{
     position: absolute;
     top:6px;
     left:6px;
-    background:rgba(0,0,0,0.8);
+    background:#fff;
     z-index:1000;
     padding:6px;
-    border-radius: 2px;
-    min-width:100px;
-    color:#ccc;
+    border-radius: 4px;
+    width:400px;
+    color:#666;
+    box-shadow:rgba(0,0,0,0.3) 0 0 18px;
 }
 
-.route-from{
+.route{
     border-radius:4px;
     padding:4px;
     margin:6px;
     border:1px solid #999;
-    display:inline-block;
-    width:140px;
-    height:20px;
+    float:left;
+    width:188px;
+    box-sizing:border-box;  
     transition:all 0.2s ease;
+    background:#ddd;
 }
 
-.route-from.empty{
+.route.empty{
     background:#999;
 }
 
-.route-to{
-    border-radius:4px;
-    padding:4px;
-    margin:6px;
-    border:1px solid #999;
-    display:inline-block;
-    width:140px;
-    height:20px;
-    transition:all 0.2s ease;
+.route i{
+    float:left;
+    padding:10px 6px;
 }
 
-.route-to.empty{
-    background:#999;
+.route-from-container.selected i{
+    color:#289a31;
+}
+
+.route-to-container.selected i{
+    color:#3288cc;
+}
+
+.route-text{
+    float:left;
+    width:126px;
+    padding:0 2px;
+    box-sizing:border-box;
+}
+
+.route-from-container.selected{
+    border-color:#289a31;
+    background:white;
+}
+
+.route-to-container.selected{
+    border-color:#3288cc;
+    background:white;
 }
 
 .route-from-close,.route-to-close{
     cursor:pointer;
+    float:left;
 }
 
 .route-from-close:hover,.route-to-close:hover{
@@ -76,7 +94,8 @@ body{
 }
 
 .top-left-section{
-    height:61px;
+    width:50%;
+    float:left;
 }
 
 .overlay{
@@ -291,4 +310,74 @@ body{
     color:white;
     text-decoration:none;
     font-size:14px;
+}
+
+.car-button{
+    opacity:0.5;
+    width:calc(25% - 2px);
+    float:left;
+    transition:all 0.2s ease;
+    cursor:pointer;
+    border:1px solid transparent;
+    border-radius:2px;
+}
+
+.car-button img{
+    width:100%;
+    padding:6px 10px 0 10px;
+    box-sizing:border-box;
+}
+
+.car-button:hover{
+    opacity:1;
+    background-color:rgba(255,255,255,0.6);
+}
+
+.car-button.selected{
+    background-color:rgba(255,255,255,0.6);
+    opacity:1;
+    border:1px solid #23b7e5;
+}
+
+.car-select{
+    overflow:auto;
+}
+
+.logo-area{
+    padding:10px;
+}
+
+.logo-area img{
+    height:40px;
+}
+
+.logo-area .text{
+    font-size:26px;
+    padding:7px 24px;
+    vertical-align:top;
+    font-style:italic;
+    display:inline-block;
+    color:#333;
+    font-weight:600;
+    text-decoration:underline;
+}
+
+.logo-area.fixed{
+    position:fixed;
+    top:11px;
+    left:11px;
+}
+
+.calculating{
+    position:absolute;
+    width:100%;
+    background:rgba(255,255,255,0.8);
+    z-index:2;
+    height:100%;
+    top:0;
+    left:0;
+    text-align:center;
+    padding-top:65px;
+    box-sizing:border-box;
+    font-size:50px;
 }

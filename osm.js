@@ -1,5 +1,49 @@
 var logEle = document.getElementById("log");
 
+const availableCars=[
+    {
+        name:'normal',
+        maximumLateralAcc:8.5,
+        topSpeed:45,
+        acceleration:3.5
+    },
+    {
+        name:'Skyline',
+        maximumLateralAcc:11,
+        topSpeed:75,
+        acceleration:6
+    },
+    {
+        name:'Porsche',
+        maximumLateralAcc:10,
+        topSpeed:85,
+        acceleration:10
+    },
+    {
+        name:'Formula 1',
+        maximumLateralAcc:40,
+        topSpeed:110,
+        acceleration:15
+    }
+]
+
+let selectedCar=availableCars[0];
+
+bindClickEvents();
+let d=[];
+
+function bindClickEvents(){
+    for(let i=0;i<availableCars.length;i++){
+        $('#car-'+i).click(function(e){
+            if($(e.currentTarget).hasClass('selected')) return;
+            else{
+                $('.selected').removeClass('selected');
+                $(e.currentTarget).addClass('selected');
+                selectCar(i)
+            }
+        })
+    }
+}
 
 function fillTable(entries) {
     let $content = $('.popup-content');
@@ -37,26 +81,27 @@ function fillTable(entries) {
     //     $edgeTable.append('<tr><td>'+i+'</td><td>'+edges[i].from+'</td><td>'+edges[i].to+'</td><td>'+Math.round(edges[i].distance*1000)+'</td></tr>');
     // }
     // $edgeTableContainer.append($edgeTable);
-    $('.popup-show').show();
+    // $('.popup-show').show();
 }
-$('.popup-close').click(function () {
-    $('.overlay').fadeOut();
-})
+// $('.popup-close').click(function () {
+//     $('.overlay').fadeOut();
+// })
 
-$('.popup-show').click(function () {
-    $('.overlay').fadeIn();
-})
+// $('.popup-show').click(function () {
+//     $('.overlay').fadeIn();
+// })
 
 function dijkstra(startNodeId, endNodeId) {
     let distances = [];
     let previous = [];
     let visited = [];
     let neighborEdges = [];
+    let velocities=[];
     let currentNode;
     let bestSolution = Number.MAX_SAFE_INTEGER;
-    let maxDist = 2 * distance(nodes[startNodeId].lat, nodes[startNodeId].lon, nodes[endNodeId].lat, nodes[endNodeId].lon);
-    console.log('maxdist:' + maxDist)
+    let maxDist = 50 * 2 * distance(nodes[startNodeId].lat, nodes[startNodeId].lon, nodes[endNodeId].lat, nodes[endNodeId].lon);
     distances[startNodeId] = 0;
+    velocities[startNodeId] = 0;
     addToQueue(startNodeId, 0);
     while (queue.length > 0 ? (queue[0][1] < Math.min(bestSolution, maxDist)) : false) {
         currentNode = queue.shift()[0];
@@ -68,11 +113,27 @@ function dijkstra(startNodeId, endNodeId) {
                 }
             }
             for (let i = 0; i < neighborEdges.length; i++) {
+                let angleDif=0;
+                if (previous[edges[neighborEdges[i]].from] != null) {
+                    angleDif=angleDifference(edges[neighborEdges[i]].angle,edges[previous[edges[neighborEdges[i]].from][previous[edges[neighborEdges[i]].from].length - 1]].angle);
 
-                let newDistance = distances[edges[neighborEdges[i]].from] + edges[neighborEdges[i]].distance;
+
+                    //     console.log('current edge:')
+                    // console.log(edges[neighborEdges[i]])
+                    // console.log('previous edge:')
+                    // console.log(edges[previous[edges[neighborEdges[i]].from][previous[edges[neighborEdges[i]].from].length - 1]])
+                    // debugger;
+                }
+                let oldVelocity = velocities[edges[neighborEdges[i]].from] || 0;
+                let maxVelocity=getMaxVelocity(edges[neighborEdges[i]].distance,angleDif);
+                let newVelocity=velocityAfterDist(oldVelocity,edges[neighborEdges[i]].distance,selectedCar.acceleration,maxVelocity)
+                let weight=edges[neighborEdges[i]].distance*1000/newVelocity;
+                let newDistance = distances[edges[neighborEdges[i]].from] + weight;
                 let oldDistance = distances[edges[neighborEdges[i]].to] || Number.MAX_SAFE_INTEGER;
                 if (newDistance < oldDistance) {
                     distances[edges[neighborEdges[i]].to] = newDistance;
+                    velocities[edges[neighborEdges[i]].to] = newVelocity;
+                    
                     previous[edges[neighborEdges[i]].to] = (previous[edges[neighborEdges[i]].from] || []).concat([neighborEdges[i]]);
                     if (edges[neighborEdges[i]].to == endNodeId) {
                         bestSolution = newDistance;
@@ -87,7 +148,29 @@ function dijkstra(startNodeId, endNodeId) {
     }
     if (previous[endNodeId] == null) {
         console.log('no path found')
+        return [previous[endNodeId], bestSolution];
     }
+    // for(let i of previous[endNodeId]){
+    //     console.log(velocities[edges[i].from])
+    // }
+    setTime(bestSolution);
+    setDistanceAndSpeed(previous[endNodeId],bestSolution);
+    let data=[];
+    let prev=previous[endNodeId]
+    for(let edge of prev){
+        data.push({
+            t:distances[edges[edge].from],
+            v:velocities[edges[edge].from]
+        })
+    }
+    //let lastOne=prev[prev.length-1];
+
+    data.push({
+        t:distances[endNodeId],
+        v:velocities[endNodeId]
+        
+    })
+    drawGraph(data);
     queue = [];
     return [previous[endNodeId], bestSolution];
 }
@@ -141,14 +224,14 @@ function initmap() {
     let toMarker;
 
     // start the map in South-East England
-    map.setView(new L.LatLng(53.0752, 8.8067), 16);
+    map.setView(new L.LatLng(48.78, 9.17), 12);
     map.addLayer(osm);
 
     $('.route-from-close').click(function () {
         map.removeLayer(fromMarker);
         fromMarker = null;
-        $('.route-from').addClass('empty');
-        $('.route-from').empty();
+        $('.route-from').html('Choose a starting line...');
+        $('.route-from-container').removeClass('selected');
         fromSelected = false;
         $('.route-from-close').hide();
     })
@@ -156,8 +239,8 @@ function initmap() {
     $('.route-to-close').click(function () {
         map.removeLayer(toMarker);
         toMarker = null;
-        $('.route-to').addClass('empty');
-        $('.route-to').empty();
+        $('.route-to').html('Choose a finish line...');
+        $('.route-to-container').removeClass('selected');
         $('.route-to-close').hide();
     })
 
@@ -170,8 +253,8 @@ function initmap() {
             routeFrom = pointId;
             fromLatLon = e.latlng;
             $('.route-from').html('lat:' + Math.round(e.latlng.lat * 1000) / 1000 + ' lng:' + Math.round(e.latlng.lng * 1000) / 1000);
-            $('.route-from').removeClass('empty');
-            $('.top-left').fadeIn();
+            
+            $('.route-from-container').addClass('selected');
             fromSelected = true;
             if (fromMarker == null) {
                 fromMarker = L.marker([e.latlng.lat, e.latlng.lng], { draggable: true }).addTo(map);
@@ -190,7 +273,8 @@ function initmap() {
             routeTo = pointId;
             toLatLon = e.latlng;
             $('.route-to').html('lat:' + Math.round(e.latlng.lat * 1000) / 1000 + ' lng:' + Math.round(e.latlng.lng * 1000) / 1000);
-            $('.route-to').removeClass('empty');
+
+            $('.route-to-container').addClass('selected');
             if (toMarker == null) {
                 toMarker = L.marker([e.latlng.lat, e.latlng.lng], { draggable: true }).addTo(map);
                 toMarker.on('dragend', function (e) {
@@ -205,9 +289,14 @@ function initmap() {
 
         }
         if (routeFrom != null && (routeTo != null)) {
-            let d = dijkstra(routeFrom, routeTo);
-            console.log(d)
-            if (d[0]) drawPath(d[0]);
+            $('.calculating').removeClass('hidden')
+            setTimeout(function(){
+                d = dijkstra(routeFrom, routeTo);
+                console.log(d)
+                if (d[0]) drawPath(d[0]);
+            })
+            $('.calculating').addClass('hidden')
+            $('.routeinfo').removeClass('hidden')
         }
         // var requestform = e.latlng;
         // var formpopup = L.popup()
@@ -314,40 +403,40 @@ let nodes = [],
     a = false,
     b = false,
     validNodeIds = {},
-    parseDone=true,
-    nodesDone=true,
-    edgesDone=true,
-    cNodes=0,
+    parseDone = true,
+    nodesDone = true,
+    edgesDone = true,
+    cNodes = 0,
     cWays = 0,
     cRels = 0,
     bounds = [],
-    cEdges=0;
+    cEdges = 0;
 const gridStepsX = 3000,
     gridStepsY = 3000;
 
-function parseInfoLoop(){
-    if(!parseDone){
-        $('#parse-text').html('Parsing... ('+(cWays+cNodes)+')');
-        setTimeout(parseInfoLoop,200);
+function parseInfoLoop() {
+    if (!parseDone) {
+        $('#parse-text').html('Parsing... (' + (cWays + cNodes) + ')');
+        setTimeout(parseInfoLoop, 200);
     }
 }
 
-function nodesInfoLoop(){
-    if(!nodesDone){
-        $('#nodes-text').html('Parsing... ('+(cNodes)+')');
-        setTimeout(parseInfoLoop,200);
+function nodesInfoLoop() {
+    if (!nodesDone) {
+        $('#nodes-text').html('Parsing... (' + (cNodes) + ')');
+        setTimeout(parseInfoLoop, 200);
     }
 }
 
-function edgesInfoLoop(){
-    if(!nodesDone){
-        $('#edges-text').html('Parsing... ('+(cEdges)+')');
-        setTimeout(parseInfoLoop,200);
+function edgesInfoLoop() {
+    if (!nodesDone) {
+        $('#edges-text').html('Parsing... (' + (cEdges) + ')');
+        setTimeout(parseInfoLoop, 200);
     }
 }
 
 function parse(file) {
-    parseDone=false;
+    parseDone = false;
     cNodes = 0;
     cWays = 0;
     cRels = 0;
@@ -362,8 +451,8 @@ function parse(file) {
             pbfParser.parse({
                 file: file,
                 endDocument: function () {
-                    parseDone=true;
-                    $('#parse-text').html('Parsing... ('+(cWays+cNodes)+')');
+                    parseDone = true;
+                    $('#parse-text').html('Parsing... (' + (cWays + cNodes) + ')');
                     saveNodes();
                     // saveNodesAsText();
                     // getEdges();
@@ -371,9 +460,9 @@ function parse(file) {
                 node: function (node) {
                     if (validNodeIds[node.id]) {
                         nodes.push({
-                            id:node.id,
-                            lat:node.lat,
-                            lon:node.lon
+                            id: node.id,
+                            lat: node.lat,
+                            lon: node.lon
                         });
                         cNodes++;
                     }
@@ -386,20 +475,20 @@ function parse(file) {
         },
         way: function (way) {
             if (way.tags.highway) {
-                if(way.tags.highway!='footway' && way.tags.highway!='cycleway' && way.tags.highway!='path'&& way.tags.highway!='track'&& way.tags.highway!='bridleway'&& way.tags.highway!='track'&& way.tags.highway!='service'&& way.tags.highway!='pedestrian'){
+                if (way.tags.highway != 'footway' && way.tags.highway != 'cycleway' && way.tags.highway != 'path' && way.tags.highway != 'track' && way.tags.highway != 'bridleway' && way.tags.highway != 'track' && way.tags.highway != 'service' && way.tags.highway != 'pedestrian') {
                     ways.push({
-                        id:way.id,
-                        nodeRefs:way.nodeRefs
+                        id: way.id,
+                        nodeRefs: way.nodeRefs
                     });
                     cWays++;
-                    for(let i=0;i<way.nodeRefs.length;i++){
+                    for (let i = 0; i < way.nodeRefs.length; i++) {
                         validNodeIds[way.nodeRefs[i]] = true;
                     }
                     // for (let nr of way.nodeRefs) {
                     //     validNodeIds[nr] = true;
                     // }
                 }
-                
+
             }
         },
         error: function (msg) {
@@ -409,7 +498,7 @@ function parse(file) {
     });
 }
 
-function saveNodesAsString(){
+function saveNodesAsString() {
     let l = nodes.length;
     let s = [];
     let step = 500000;
@@ -418,21 +507,21 @@ function saveNodesAsString(){
         console.log(i + '/' + l)
     }
     console.log(l + '/' + l)
-    saveText(s,'nodes.data','Nodes');
+    saveText(s, 'nodes.data', 'Nodes');
     saveWaysAsText();
 }
 
 function saveNodes() {
-    
-    
-    let buffer=new ArrayBuffer(nodes.length*8);
-    let view=new Uint32Array(buffer);
-    let separator=12345;
-    let index=0;
-    for(let i=0;i<nodes.length;i++){
-        view[index]=Math.round(nodes[i].lat*10000000);
+
+
+    let buffer = new ArrayBuffer(nodes.length * 8);
+    let view = new Uint32Array(buffer);
+    let separator = 12345;
+    let index = 0;
+    for (let i = 0; i < nodes.length; i++) {
+        view[index] = Math.round(nodes[i].lat * 10000000);
         index++;
-        view[index]=Math.round(nodes[i].lon*10000000);
+        view[index] = Math.round(nodes[i].lon * 10000000);
         index++;
         // if(node.tags){
         //     if(node.tags.highway){
@@ -448,27 +537,27 @@ function saveNodes() {
     console.log('view')
     console.log(view)
     saveArr(view, 'nodes.data', 'Nodes');
-    
+
     getEdges();
 }
 
 function saveEdges() {
     buildNodeIdMap();
-    let buffer=new ArrayBuffer(edges.length*8);
-    let view=new Uint32Array(buffer);
-    let separator=12345;
-    let index=0;
-    for(let edge of edges){
-        view[index]=nodeIdMap[edge.from];
+    let buffer = new ArrayBuffer(edges.length * 8);
+    let view = new Uint32Array(buffer);
+    let separator = 12345;
+    let index = 0;
+    for (let edge of edges) {
+        view[index] = nodeIdMap[edge.from];
         index++;
-        view[index]=nodeIdMap[edge.to];
+        view[index] = nodeIdMap[edge.to];
         index++;
     }
     saveEdgesArr(view, 'edges.data', 'Edges');
 }
 
 // function saveWays() {
-    
+
 //     let buffer=new ArrayBuffer(50000000);
 //     let view=new Uint32Array(buffer);
 //     let separator=12345;
@@ -484,33 +573,29 @@ function saveEdges() {
 //         index++;
 //     }
 //     saveArr(view, 'ways.data', 'download ways');
-    
+
 // }
 
 function handleEdgesFile() {
-    edges=[];
-    console.log('hello handle')
+    edges = [];
     let file = this.files[0];
     let reader = new FileReader();
     reader.onload = function () {
-        console.log('reader result')
-        console.log(reader.result)
-        let view=new Uint32Array(reader.result);
+        let view = new Uint32Array(reader.result);
         // for(let i=0;i<50;i++){
         //     console.log(view[i])
         // }
-        let index=0;
-        for(let i=0;i<view.length/2;i++){
-            let edge={};
-            edge.from=view[index];
+        let index = 0;
+        for (let i = 0; i < view.length / 2; i++) {
+            let edge = {};
+            edge.from = view[index];
             index++;
-            edge.to=view[index];
+            edge.to = view[index];
             index++;
             edges.push(edge);
-            edges.push({from:edge.to,to:edge.from});
+            edges.push({ from: edge.to, to: edge.from });
         }
 
-        console.log(edges)
         $('#ways-block').removeClass('false');
         $('#ways-block').addClass('true');
         $('#ways-icon').removeClass('fa-times');
@@ -521,25 +606,21 @@ function handleEdgesFile() {
 }
 
 function handleNodesFile2() {
-    nodes=[];
-    console.log('hello handle')
+    nodes = [];
     let file = this.files[0];
     let reader = new FileReader();
     reader.onload = function () {
-        console.log('reader result')
-        console.log(reader.result)
-        let view=new Uint32Array(reader.result);
+        let view = new Uint32Array(reader.result);
         // for(let i=0;i<50;i++){
         //     console.log(view[i])
         // }
-        let index=0;
-        console.log(view.length)
-        for(let i=0;i<view.length/2;i++){
-            let node={};
-            node.id=i;
-            node.lat=view[index]/10000000.0;
+        let index = 0;
+        for (let i = 0; i < view.length / 2; i++) {
+            let node = {};
+            node.id = i;
+            node.lat = view[index] / 10000000.0;
             index++;
-            node.lon=view[index]/10000000.0;
+            node.lon = view[index] / 10000000.0;
             // index++;
             // node.highway='';
             // while(view[index]!=12345 && index<view.length){
@@ -547,10 +628,9 @@ function handleNodesFile2() {
             //     index++;
             // }
             index++;
-            
+
             nodes.push(node);
         }
-        console.log(nodes)
         $('#nodes-block').removeClass('false');
         $('#nodes-block').addClass('true');
         $('#nodes-icon').removeClass('fa-times');
@@ -560,34 +640,34 @@ function handleNodesFile2() {
     reader.readAsArrayBuffer(file)
 }
 
-function saveEdgesArr(buffer,filename,label){
+function saveEdgesArr(buffer, filename, label) {
     var a = document.createElement('a');
-    let b=new Blob([buffer.buffer],{
-        type:'application/octet-stream'
+    let b = new Blob([buffer.buffer], {
+        type: 'application/octet-stream'
     });
     a.setAttribute('href', URL.createObjectURL(b));
     a.setAttribute('download', filename);
     a.innerHTML = label;
     $('.mini-block .right').empty();
-    let em=$(document.createElement('em'));
+    let em = $(document.createElement('em'));
     em.addClass('fas fa-download');
     $('.mini-block .right').append(em)
     $('.mini-block .right').append(a);
-    requestAnimationFrame(function(){
+    requestAnimationFrame(function () {
         $('.mini-block').removeClass('hidden');
-    }) 
+    })
 }
 
-function saveArr(buffer,filename,label){
+function saveArr(buffer, filename, label) {
     var a = document.createElement('a');
-    let b=new Blob([buffer.buffer],{
-        type:'application/octet-stream'
+    let b = new Blob([buffer.buffer], {
+        type: 'application/octet-stream'
     });
     a.setAttribute('href', URL.createObjectURL(b));
     a.setAttribute('download', filename);
     a.innerHTML = label;
     $('.mini-block .left').empty();
-    let em=$(document.createElement('em'));
+    let em = $(document.createElement('em'));
     em.addClass('fas fa-download');
     $('.mini-block .left').append(em)
     $('.mini-block .left').append(a);
@@ -599,15 +679,15 @@ function saveText(text, filename, label) {
         type: "application/octet-stream"
     })));
     a.setAttribute('download', filename);
-    a.innerHTML = '<em class="fas fa-download"></em>'+label;
+    a.innerHTML = '<em class="fas fa-download"></em>' + label;
     $('.mini-block .right').empty();
     // let em=$(document.createElement('em'));
     // em.addClass('fas fa-download');
     // $('.mini-block .right').append(em)
     $('.mini-block .right').append(a);
-    requestAnimationFrame(function(){
+    requestAnimationFrame(function () {
         $('.mini-block').removeClass('hidden');
-    }) 
+    })
 
 }
 
@@ -615,7 +695,7 @@ function saveText(text, filename, label) {
 function saveWaysAsText() {
     let l = ways.length;
     let s = [];
-    
+
     // let step = 500000;
     // for (let i = 0; i < l; i += step) {
     //     s.push(JSON.stringify(ways.slice(i, Math.min(i + step, l))))
@@ -645,24 +725,25 @@ function getEdges() {
         }
     }
     console.log('get edges done')
-    console.log(edges)
     saveEdges();
     // requestAnimationFrame(buildOffsetArray);
 
 }
 
-function calc(){
+function calc() {
     console.log('hey calc')
-    $('#calc-text').html('Dijkstra Calculations (1/5)');
-    setTimeout(buildOffsetArray,200);
+    $('#calc-text').html('Routing Preparations (1/5)');
+    setTimeout(buildOffsetArray, 200);
 }
 
-function go(){
+function go() {
     $('.center').fadeOut(2000);
     initmap();
+    
+    $('.top-left').fadeIn();
 }
 
-function buildNodeIdMap(){
+function buildNodeIdMap() {
     console.log('nodeidmap')
     for (let i = 0; i < nodes.length; i++) {
         nodeIdMap[nodes[i].id] = i;
@@ -685,8 +766,8 @@ function buildOffsetArray() {
         sum += offsetArray[i];
         offsetArray[i] = sum;
     }
-    $('#calc-text').html('Dijkstra Calculations (2/5)');
-    setTimeout(buildOffsetEdges,200);
+    $('#calc-text').html('Routing Preparations (2/5)');
+    setTimeout(buildOffsetEdges, 200);
 }
 
 function buildOffsetEdges() {
@@ -694,15 +775,15 @@ function buildOffsetEdges() {
     let minPos = 0;
     for (let i = 0; i < edges.length; i++) {
         minPos = offsetArray[edges[i].from];
-        while (offsetEdges[minPos] != null){
+        while (offsetEdges[minPos] != null) {
             minPos++;
         }
         offsetEdges[minPos] = i;
-        if(i%1000==0) console.log(i)
+        if (i % 10000 == 0) console.log(i)
     }
     console.log('offset edges done')
-    $('#calc-text').html('Dijkstra Calculations (3/5)');
-    setTimeout(calculateAllDistances,200);
+    $('#calc-text').html('Routing Preparations (3/5)');
+    setTimeout(calculateAllDistances, 200);
 }
 
 function contractEdges() {
@@ -720,11 +801,11 @@ function calculateAllDistances() {
     for (let i = 0; i < edges.length; i++) {
         if (nodes[edges[i].from] && nodes[edges[i].to]) {
             edges[i].distance = distance(nodes[edges[i].from].lat, nodes[edges[i].from].lon, nodes[edges[i].to].lat, nodes[edges[i].to].lon);
+            edges[i].angle = angle(nodes[edges[i].from].lat, nodes[edges[i].from].lon, nodes[edges[i].to].lat, nodes[edges[i].to].lon);
         }
     }
-    // console.log(edges);
-    $('#calc-text').html('Dijkstra Calculations (4/5)');
-    setTimeout(buildPointDistanceGrid,200);
+    $('#calc-text').html('Routing Preparations (4/5)');
+    setTimeout(buildPointDistanceGrid, 200);
 }
 
 function buildPointDistanceGrid() {
@@ -733,10 +814,10 @@ function buildPointDistanceGrid() {
         pointDistanceGrid[i] = [];
         for (let j = 0; j < gridStepsY; j++) {
             pointDistanceGrid[i][j] = [];
-        }1042/862
+        } 1042 / 862
     }
     let node = {};
-    let c=0;
+    let c = 0;
     for (let i = 0; i < nodes.length; i++) {
         node = nodes[i];
         xIndex = Math.floor((node.lon - dimensions.xMin) / gridDX);
@@ -744,7 +825,7 @@ function buildPointDistanceGrid() {
         pointDistanceGrid[xIndex][yIndex].push(node.id);
         c++;
     }
-    $('#calc-text').html('Dijkstra Calculations (5/5)');
+    $('#calc-text').html('Routing Preparations (5/5)');
     $('#calc-block').removeClass('false');
     $('#calc-block').addClass('true');
     $('#calc-icon').removeClass('fa-times');
@@ -770,24 +851,24 @@ function getClosestPoint(lat, lon, nodeIds) {
 }
 
 function getClosePoints(lat, lon) {
-    console.log('get close points')
-    console.log(lat)
-    console.log(lon)
-    console.log(dimensions)
+    // console.log('get close points')
+    // console.log(lat)
+    // console.log(lon)
+    // console.log(dimensions)
     let xIndex = Math.floor((lon - dimensions.xMin) / gridDX);
     let yIndex = Math.floor((lat - dimensions.yMin) / gridDY);
-    console.log('get close points')
-    console.log(xIndex)
-    console.log(yIndex)
-    console.log(pointDistanceGrid)
+    // console.log('get close points')
+    // console.log(xIndex)
+    // console.log(yIndex)
+    // console.log(pointDistanceGrid)
     let points = [];
     for (let i = Math.max(0, xIndex - 1); i <= Math.min(gridStepsX - 1, xIndex + 1); i++) {
         for (let j = Math.max(0, yIndex - 1); j <= Math.min(gridStepsY - 1, yIndex + 1); j++) {
-            console.log('i:' + i + ' j:' + j)
+            // console.log('i:' + i + ' j:' + j)
             points = points.concat(pointDistanceGrid[i][j]);
         }
     }
-    console.log(points)
+    // console.log(points)
     return points;
 }
 
@@ -830,7 +911,6 @@ function handleWaysFile() {
         console.log('done')
         ways = JSON.parse(reader.result)
         console.log('ways done')
-        console.log(ways)
         $('#ways-block').removeClass('false');
         $('#ways-block').addClass('true');
         $('#ways-icon').removeClass('fa-times');
@@ -849,7 +929,6 @@ function handleNodesFile() {
         console.log('done')
         nodes = JSON.parse(reader.result)
         console.log('nodes done')
-        console.log(nodes)
     }
     reader.readAsText(file)
 }
@@ -870,4 +949,174 @@ function distance(lat1, lon1, lat2, lon2) {
         (1 - c((lon2 - lon1) * p)) / 2;
 
     return 12742 * Math.asin(Math.sqrt(a)); // 2 * R; R = 6371 km
+}
+
+function angle(lat1, lon1, lat2, lon2) {
+    var dy = lon2 - lon1;
+    var dx = lat2 - lat1;
+    var theta = Math.atan2(dy, dx); // range (-PI, PI]
+    theta *= 180 / Math.PI; // rads to degs, range (-180, 180]
+    if (theta < 0) theta = 360 + theta; // range [0, 360)
+    return theta;
+}
+
+function angleDifference(ang1, ang2) {
+    return Math.min(Math.abs(ang1 - ang2), 360 - Math.abs(ang1 - ang2))
+}
+
+function getTravelTime(dist,angle){
+    let timeAtMaxSpeed=(dist*1000)/selectedCar.topSpeed;
+    let minAngleTime=Math.sqrt(angle/90*1000*dist/selectedCar.maximumLateralAcc)
+    // console.log('dist:'+dist*1000+'m')
+    // console.log('angle:'+angle)
+    // console.log('at max:'+timeAtMaxSpeed);
+    // console.log('angle:'+minAngleTime)
+    return Math.max(timeAtMaxSpeed,minAngleTime)
+}
+
+function getMaxVelocity(dist,angle){
+    let maxAngleVelocity=Math.sqrt(1000*dist*selectedCar.maximumLateralAcc/(angle/90))
+    // console.log('dist:'+dist*1000+'m')
+    // console.log('angle:'+angle)
+    // console.log('at max:'+timeAtMaxSpeed);
+    // console.log('angle:'+minAngleTime)
+    return Math.min(selectedCar.topSpeed,maxAngleVelocity)
+}
+
+function velocityAfterDist(v,dist,a,maxSpeed){
+    if(v>maxSpeed) return maxSpeed;
+    let t=(-v+Math.sqrt(v*v+2*a*dist*1000))/a;
+    let vNew=v+a*t;
+    vNew=Math.min(vNew,maxSpeed)
+    vNew=v+(vNew-v)*(maxSpeed-vNew)/maxSpeed;
+    return vNew;
+}
+
+function selectCar(index){
+    selectedCar=availableCars[index];
+    if(d.length>0){
+        d = dijkstra(routeFrom, routeTo);
+        console.log(d)
+        if (d[0]) drawPath(d[0]);
+    }
+}
+
+function getTotalTime(path){
+    for(let edge in path){
+
+    }
+}
+
+function setDistanceAndSpeed(path,time){
+    let dist=0;
+    for(let edge of path){
+        dist+=edges[edge].distance;
+    }
+    $('#distance').html(Math.round(dist*100)/100+'km')
+    $('#avgspeed').html(Math.round((dist)/(time/3600))+'km/h')
+}
+
+function setTime(t){
+    $('#time').html(timeFormat(t))
+}
+
+function timeFormat(t){
+    let timeString="";
+    if(t>3600){
+        timeString+=Math.round(t/3600)+'h ';
+        t=t%3600;
+    }
+    if(t<60*10) timeString+='0'
+    timeString+=Math.round(t/60)+'m ';
+    t=t%60;
+    if(t<10) timeString+='0'
+    timeString+=Math.round(t)+'s';
+    return timeString;
+}
+
+function drawGraph(data){
+    let maxV=0;
+    for(let d of data){
+        if(d.v>maxV) maxV=d.v;
+    }
+    maxV=Math.ceil(3.6*maxV/10)*10;
+    $('#topspeed').html(maxV+'km/h')
+    console.log('drawGraph')
+    let xOffset=30;
+    let yOffset=20;
+    let can=$('#graph')[0];
+    let ctx=can.getContext('2d');
+    let minT=0;
+    let maxT=data[data.length-1].t;
+    let minV=0;
+    
+    let width=400;
+    let height=200;
+    ctx.clearRect(0,0,width,height);
+    ctx.translate(0.5,0.5);
+    ctx.strokeStyle="#333";
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(xOffset,height-yOffset);
+    ctx.lineTo(width-xOffset,height-yOffset);
+    ctx.moveTo(xOffset,height-yOffset);
+    ctx.lineTo(xOffset,yOffset);
+    ctx.textAlign="left";
+
+    let xStepSize=10;
+    let unit='s';
+    if(maxT>120){
+        xStepSize=60;
+        unit='m';
+    }
+    if(maxT>1200){
+        xStepSize=600;
+    }
+    if(maxT>7200){
+        xStepSize=3600;
+        unit='h'
+    }
+    
+    // x-lines
+
+    for(let i=xStepSize;i<maxT;i+=xStepSize){
+        let xOff=xOffset+(width-xOffset*2)*i/maxT;
+        ctx.moveTo(xOff,height-yOffset-5);
+        ctx.lineTo(xOff,height-yOffset+5);
+        if(unit=='s'){
+            ctx.fillText(i+'s',xOff+2,height-8)
+        }else if(unit=='m'){
+            ctx.fillText(i/xStepSize+'min',xOff+2,height-8)
+        }else if(unit=='h'){
+            ctx.fillText(i/xStepSize+'h',xOff+2,height-8)
+        }
+    }
+
+    // y-lines
+    let yStepSize=25;
+     unit='km/h';
+    if(maxV>250){
+        yStepSize=50;
+    }
+    ctx.textAlign="right";
+    for(let i=0;i<maxV;i+=yStepSize){
+        let yOff=yOffset+(height-yOffset*2)*i/maxV;
+        ctx.moveTo(xOffset-5,height-yOff);
+        ctx.lineTo(xOffset+5,height-yOff);
+        ctx.fillText(i,xOffset-7,height-yOff+4)
+    }
+    ctx.fillText('km/h',xOffset+8,18)
+    ctx.stroke();
+    ctx.closePath();
+    ctx.beginPath();
+    ctx.strokeStyle="#3288CC";
+    ctx.moveTo(xOffset,height-yOffset);
+    pixelPerT=(width-xOffset*2)/maxT;
+    pixelPerV=(height-yOffset*2)/maxV;
+    for(let d of data){
+        ctx.lineTo(d.t*pixelPerT+xOffset,height-yOffset-pixelPerV*(d.v*3.6));
+    }
+    ctx.stroke();
+    ctx.closePath();
+    ctx.translate(-0.5,-0.5);
 }

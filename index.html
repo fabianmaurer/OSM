@@ -4,8 +4,7 @@
 <head>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.4/dist/leaflet.css" integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
         crossorigin="" />
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU"
-        crossorigin="anonymous">
+        <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.8.2/css/all.css" integrity="sha384-xVVam1KS4+Qt2OrFa+VdRUoXygyKIuNWUUUBZYv+n27STsJ7oDOHJgfF0bNKLMJF" crossorigin="anonymous">
 
 
     <link rel="stylesheet" href="osm.css" />
@@ -14,18 +13,65 @@
 </head>
 
 <body>
+        
 
     <div class="top-left" style="display:none;">
-        <div class="top-left-section">
-            from<br>
-            <div class="route-from empty"></div><i class="fas fa-times route-from-close"></i></br>
+        <div class="calculating hidden">
+                <i class="fas fa-cog fa-spin"></i>
+        </div>
+        <div class="logo-area">
+            <img src="img/flag.png">
+            <div class="text">
+                    High Speed Planner
+            </div>
+        </div>
+        <div class="car-select">
+            <div class="car-button selected" id="car-0">
+                <img src="img/normal.png">
+            </div>
+            <div class="car-button" id="car-1">
+                <img src="img/Skyline.png">
+            </div>
+            <div class="car-button" id="car-2">
+                <img src="img/Porsche.png">
+            </div>
+            <div class="car-button" id="car-3">
+                <img src="img/F1.png">
+            </div>
         </div>
         <div class="top-left-section">
-            to<br>
-            <div class="route-to empty"></div><i class="fas fa-times route-to-close"></i>
+            <div class="route route-from-container">
+                <i class="fas fa-torii-gate"></i>
+                <div class="route-text route-from">
+                        Choose a starting line...
+                </div>
+                    <i class="fas fa-times route-from-close" style="display:none;"></i>
+            </div>
+        </div>
+        <div class="top-left-section">
+                <div class="route route-to-container">
+                        <i class="fas fa-flag-checkered"></i>
+                        <div class="route-text route-to">
+                                Choose a finish line...
+                        </div>
+                            <i class="fas fa-times route-to-close" style="display:none;"></i>
+                    </div>
+        </div>
+        <div class="routeinfo hidden">
+            Time: <span id="time"></span><br>
+            Distance: <span id="distance"></span><br>
+            Average Speed: <span id="avgspeed"></span><br>
+            Top Speed: <span id="topspeed"></span><br>
+            <canvas id="graph" width="400" height="200"></canvas>
         </div>
     </div>
     <div class="center">
+            <div class="logo-area fixed">
+                    <img src="img/flag.png">
+                    <div class="text">
+                            High Speed Planner
+                    </div>
+                </div>
         <div class="file-interface">
             <input type="file" id="file" name="file" accept=".pbf">
             <div class="block generate-block">
@@ -35,7 +81,7 @@
                 <label for="file" class="generate">
                     <div class="number-icon">1.</div>
                     <div class="button-text" id="parse-text">
-                            Parse Map File
+                            Parse Map File (optional)
                     </div>
                     
                 </label>
@@ -84,7 +130,7 @@
                     <div id="calc-button" class="generate">
                             <div class="number-icon">4.</div>
                             <div class="button-text" id="calc-text">
-                                    Dijkstra Calculations
+                                    Routing Preparations
                             </div>
                     </div>
                 </div>
@@ -104,9 +150,9 @@
     </div>
 
     <div id="map" class="hidden"></div>
-    <div class="popup-show" style="display:none;">
+    <!-- <div class="popup-show" style="display:none;">
         Knoten und Kanten
-    </div>
+    </div> -->
     <div class="overlay" style="display:none;">
         <div class="popup">
             <div class="popup-header">
