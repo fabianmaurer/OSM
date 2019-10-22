@@ -28,7 +28,7 @@
     ],
     "dependencies": {
         "node-xml": "1.0.2",
-        "protobufjs": "3.8.2"
+        "protobufjs": "6.8.8"
     },
     "optionalDependencies": {
         "zlibjs": "0.2.0",
